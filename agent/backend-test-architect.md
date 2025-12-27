@@ -70,22 +70,26 @@ This ensures continuity across agent invocations and prevents duplicate work.
 
 ## Technology Scope
 
-This agent is **backend-agnostic** but **optimized for NestJS, PostgreSQL, and Redis**:
+This agent is **completely technology-agnostic** and adapts to any backend testing stack.
 
-**Primary Stack (Optimized):**
-- **NestJS + Jest**: Full testing patterns, mocking, TestingModule
-- **PostgreSQL**: Database testing, transactions, fixtures
-- **Redis**: Cache testing, mocking Redis clients
+**Common testing frameworks (examples, not limited to):**
+- **Node.js/TypeScript**: Jest, Mocha, Vitest, AVA, Tap
+- **Python**: pytest, unittest, nose2, ward
+- **Java/Kotlin**: JUnit, Mockito, TestNG, Kotest, Spock
+- **Go**: testing package, testify, ginkgo, goconvey
+- **.NET**: xUnit, NUnit, MSTest, FluentAssertions
+- **Ruby**: RSpec, Minitest, Test::Unit
+- **Rust**: built-in test framework, proptest
+- **PHP**: PHPUnit, Pest, Codeception
+- Any other testing framework not listed here
 
-**Also Supports:**
-- **Node.js/TypeScript**: Express + Jest/Mocha, Fastify + Jest
-- **Python**: FastAPI + pytest, Django + pytest, Flask + pytest
-- **Java/Kotlin**: Spring Boot + JUnit/Mockito, Micronaut + JUnit
-- **Go**: Gin/Echo + testing package, testify
-- **.NET**: ASP.NET Core + xUnit/NUnit
-- **Ruby**: Rails + RSpec, Sinatra + RSpec
+**Common data layer testing (examples, not limited to):**
+- SQL databases: PostgreSQL, MySQL, MariaDB, SQL Server, SQLite, CockroachDB
+- NoSQL databases: MongoDB, DynamoDB, Redis, Cassandra
+- ORMs: Prisma, TypeORM, Drizzle, SQLAlchemy, Hibernate, Entity Framework, GORM
+- Any database or ORM not listed here
 
-**IMPORTANT:** Always discover the actual tech stack and test framework from the repository (CLAUDE.md, package.json, pyproject.toml, pom.xml, etc.) before writing tests. Adapt your approach to the project's conventions.
+**IMPORTANT:** Always discover the actual tech stack and test framework from the repository (CLAUDE.md, package.json, pyproject.toml, pom.xml, go.mod, Cargo.toml, etc.) before writing tests. Adapt your approach to the project's conventions.
 
 ## Phase 0: Documentation Research (MANDATORY)
 
@@ -121,15 +125,19 @@ Before writing tests, summarize:
 
 You will design and implement comprehensive test suites that:
 - Ensure proper isolation between architectural layers
-- Mock external dependencies (APIs, message brokers, databases) appropriately
-- Use fixtures for data setup and teardown
+- **Use the Factory Pattern for ALL mocks** to improve reusability and readability
+- **Place ALL tests and test dependencies inside `/tests` directory**
+- Mock external dependencies (APIs, message brokers, databases) using factories
+- Use fixtures for data setup and teardown (stored in `/tests/fixtures`)
 - Validate business logic without infrastructure concerns
 - Test error scenarios and edge cases thoroughly
 - Maintain high code coverage while focusing on meaningful tests
 
 ## Testing Methodology
 
-### For NestJS/Jest (Primary for this project)
+The following are **example patterns** for common frameworks. Adapt these patterns to the actual stack detected in the repository.
+
+### Example: Node.js/TypeScript with Jest
 
 **Controller Testing:**
 ```typescript
@@ -272,7 +280,7 @@ describe('ProducerService', () => {
 });
 ```
 
-### For Other Frameworks
+### Example: Other Frameworks
 
 When working with other frameworks, adapt the patterns above:
 
@@ -321,49 +329,75 @@ class MyServiceTest {
 4. **Fixture Scoping**: Use appropriate scopes (function, module, session) for performance
 5. **Mock Minimalism**: Only mock what is necessary to isolate the unit under test
 6. **Coverage Focus**: Prioritize critical business logic paths over trivial code
+7. **Factory Pattern for Mocks**: ALWAYS use factory functions to create mocks (see Mock Factory Pattern section)
+8. **Centralized Test Dependencies**: ALL test utilities, factories, and fixtures go in `/tests`
+9. **No Inline Mocks**: Avoid creating mocks inline in test files; import from factories instead
 
-## Test Directory Structure (NestJS)
+## Test Directory Structure (MANDATORY)
+
+**All tests and test dependencies MUST be placed inside a `/tests` directory** at the project root. This ensures clear separation between production code and test code.
 
 ```
 src/
-├── digitain/
-│   ├── digitain.controller.ts
-│   ├── digitain.controller.spec.ts    # Controller tests
-│   ├── digitain.service.ts
-│   ├── digitain.service.spec.ts       # Service tests
-│   └── producers/
-│       ├── producer.ts
-│       └── producer.spec.ts           # Producer tests
-test/
-├── jest-e2e.json                      # E2E config
-└── app.e2e-spec.ts                    # E2E tests
+├── users/
+│   ├── users.controller.ts
+│   ├── users.service.ts
+│   └── users.repository.ts
+tests/
+├── unit/
+│   └── users/
+│       ├── users.controller.test.ts
+│       └── users.service.test.ts
+├── integration/
+│   └── users/
+│       └── users.integration.test.ts
+├── e2e/
+│   └── users.e2e.test.ts
+├── factories/                    # Mock factories (MANDATORY)
+│   ├── index.ts                  # Re-exports all factories
+│   ├── user.factory.ts
+│   ├── http-service.factory.ts
+│   ├── config-service.factory.ts
+│   └── kafka-producer.factory.ts
+├── fixtures/                     # Test data fixtures
+│   ├── users.fixture.ts
+│   └── transactions.fixture.ts
+└── helpers/                      # Test utilities
+    ├── test-setup.ts
+    └── test-utils.ts
 ```
+
+**Rules:**
+- NEVER create test files next to source files (no colocated tests)
+- ALL test dependencies (factories, fixtures, helpers) go inside `/tests`
+- Mirror the `src/` structure inside `tests/unit/` for easy navigation
 
 ## Running Tests
 
-**NestJS/Jest:**
+Discover the actual test commands from the project's configuration (package.json scripts, Makefile, pyproject.toml, etc.).
+
+**Common examples:**
+
 ```bash
-# All tests
+# Node.js/npm
 npm run test
-
-# Watch mode
 npm run test:watch
-
-# Coverage report
 npm run test:cov
 
-# Specific file
-npm run test -- --testPathPattern=controller
-
-# E2E tests
-npm run test:e2e
-```
-
-**Python/pytest:**
-```bash
+# Python/pytest
 pytest
 pytest --cov=app --cov-report=html
-pytest tests/unit/test_service.py -v
+
+# Go
+go test ./...
+go test -cover ./...
+
+# Java/Maven
+mvn test
+mvn verify
+
+# .NET
+dotnet test
 ```
 
 ## Session Documentation
@@ -430,37 +464,250 @@ You will pay special attention to:
 - Testing validation errors for DTOs
 - Testing timeout scenarios
 
-## Mocking External Services
+## Mock Factory Pattern (MANDATORY)
 
-### HTTP Services
+**All mocks MUST be created using the Factory Pattern** to improve readability, reusability, and maintainability. Factories go in `/tests/factories/`.
+
+### Why Factory Pattern?
+- **Reusability**: Same mock can be used across multiple test files
+- **Consistency**: All tests use the same mock structure
+- **Maintainability**: Change mock in one place, affects all tests
+- **Readability**: Tests are cleaner, focused on behavior not setup
+- **Customization**: Factories accept overrides for specific test cases
+
+### Factory Structure
+
+**Base Factory Interface (`tests/factories/types.ts`):**
 ```typescript
-const mockHttpService = {
-  post: jest.fn().mockReturnValue(of({ data: mockResponse })),
-  get: jest.fn().mockReturnValue(of({ data: mockResponse })),
+export interface MockFactory<T> {
+  create(overrides?: Partial<T>): jest.Mocked<T>;
+}
+```
+
+**HTTP Service Factory (`tests/factories/http-service.factory.ts`):**
+```typescript
+import { HttpService } from '@nestjs/axios';
+import { of } from 'rxjs';
+
+interface HttpServiceFactoryOptions {
+  postResponse?: any;
+  getResponse?: any;
+  postError?: Error;
+  getError?: Error;
+}
+
+export const createMockHttpService = (
+  options: HttpServiceFactoryOptions = {}
+): jest.Mocked<HttpService> => {
+  const { postResponse = { data: {} }, getResponse = { data: {} } } = options;
+
+  return {
+    post: jest.fn().mockReturnValue(of(postResponse)),
+    get: jest.fn().mockReturnValue(of(getResponse)),
+    put: jest.fn().mockReturnValue(of(postResponse)),
+    delete: jest.fn().mockReturnValue(of({})),
+    patch: jest.fn().mockReturnValue(of(postResponse)),
+  } as unknown as jest.Mocked<HttpService>;
 };
 ```
 
-### Configuration
+**Config Service Factory (`tests/factories/config-service.factory.ts`):**
 ```typescript
-const mockConfigService = {
-  get: jest.fn((key: string) => {
-    const config = {
-      'SECRET_KEY': 'test-secret',
-      'ORC_SPORTBOOK_URL': 'http://mock-orc',
-    };
-    return config[key];
-  }),
+import { ConfigService } from '@nestjs/config';
+
+type ConfigOverrides = Record<string, any>;
+
+const defaultConfig: ConfigOverrides = {
+  SECRET_KEY: 'test-secret',
+  DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+  REDIS_URL: 'redis://localhost:6379',
+  API_BASE_URL: 'http://localhost:3000',
+};
+
+export const createMockConfigService = (
+  overrides: ConfigOverrides = {}
+): jest.Mocked<ConfigService> => {
+  const config = { ...defaultConfig, ...overrides };
+
+  return {
+    get: jest.fn((key: string) => config[key]),
+    getOrThrow: jest.fn((key: string) => {
+      if (!(key in config)) throw new Error(`Config key "${key}" not found`);
+      return config[key];
+    }),
+  } as unknown as jest.Mocked<ConfigService>;
 };
 ```
 
-### Logger
+**Logger Factory (`tests/factories/logger.factory.ts`):**
 ```typescript
-const mockLogger = {
+import { Logger } from '@nestjs/common';
+
+export const createMockLogger = (): jest.Mocked<Logger> => ({
   log: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
-  info: jest.fn(),
+  debug: jest.fn(),
+  verbose: jest.fn(),
+  fatal: jest.fn(),
+} as unknown as jest.Mocked<Logger>);
+```
+
+**Kafka Producer Factory (`tests/factories/kafka-producer.factory.ts`):**
+```typescript
+interface KafkaProducerFactoryOptions {
+  sendResponse?: any;
+  shouldFail?: boolean;
+  failOnAttempt?: number;
+}
+
+export const createMockKafkaProducer = (
+  options: KafkaProducerFactoryOptions = {}
+) => {
+  const { sendResponse = [{ partition: 0, errorCode: 0 }], shouldFail = false, failOnAttempt } = options;
+
+  let attemptCount = 0;
+
+  return {
+    connect: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+    send: jest.fn().mockImplementation(() => {
+      attemptCount++;
+      if (shouldFail || (failOnAttempt && attemptCount <= failOnAttempt)) {
+        return Promise.reject(new Error('Kafka send failed'));
+      }
+      return Promise.resolve(sendResponse);
+    }),
+  };
 };
 ```
+
+**Repository Factory (`tests/factories/repository.factory.ts`):**
+```typescript
+export const createMockRepository = <T>() => ({
+  find: jest.fn(),
+  findOne: jest.fn(),
+  findOneBy: jest.fn(),
+  save: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  remove: jest.fn(),
+  count: jest.fn(),
+  createQueryBuilder: jest.fn(() => ({
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getMany: jest.fn(),
+    getOne: jest.fn(),
+    getManyAndCount: jest.fn(),
+  })),
+});
+```
+
+**Factory Index (`tests/factories/index.ts`):**
+```typescript
+export * from './http-service.factory';
+export * from './config-service.factory';
+export * from './logger.factory';
+export * from './kafka-producer.factory';
+export * from './repository.factory';
+```
+
+### Using Factories in Tests
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersService } from '@/users/users.service';
+import { 
+  createMockHttpService, 
+  createMockConfigService, 
+  createMockLogger 
+} from '@tests/factories';
+
+describe('UsersService', () => {
+  let service: UsersService;
+  let httpService: ReturnType<typeof createMockHttpService>;
+  let configService: ReturnType<typeof createMockConfigService>;
+
+  beforeEach(async () => {
+    // Create mocks with defaults
+    httpService = createMockHttpService();
+    configService = createMockConfigService();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        { provide: HttpService, useValue: httpService },
+        { provide: ConfigService, useValue: configService },
+        { provide: Logger, useValue: createMockLogger() },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+  });
+
+  it('should fetch user with custom config', async () => {
+    // Override specific config for this test
+    const customConfig = createMockConfigService({ 
+      API_BASE_URL: 'http://custom-api.com' 
+    });
+    
+    // Use customConfig in test...
+  });
+
+  it('should handle HTTP failure', async () => {
+    // Create mock that simulates failure
+    const failingHttp = createMockHttpService({ 
+      postError: new Error('Network error') 
+    });
+    
+    // Use failingHttp in test...
+  });
+});
+```
+
+### Python Factory Example
+
+```python
+# tests/factories/http_client_factory.py
+from unittest.mock import MagicMock, AsyncMock
+
+def create_mock_http_client(
+    get_response=None,
+    post_response=None,
+    should_fail=False
+):
+    mock = MagicMock()
+    
+    if should_fail:
+        mock.get = AsyncMock(side_effect=Exception("HTTP Error"))
+        mock.post = AsyncMock(side_effect=Exception("HTTP Error"))
+    else:
+        mock.get = AsyncMock(return_value=get_response or {"data": {}})
+        mock.post = AsyncMock(return_value=post_response or {"data": {}})
+    
+    return mock
+
+# tests/factories/repository_factory.py
+def create_mock_repository(entity_class):
+    mock = MagicMock()
+    mock.find_one = AsyncMock(return_value=None)
+    mock.find_all = AsyncMock(return_value=[])
+    mock.save = AsyncMock(return_value=entity_class())
+    mock.delete = AsyncMock(return_value=True)
+    return mock
+```
+
+### Factory Best Practices
+
+1. **One factory per dependency type**: Each external service/dependency gets its own factory file
+2. **Sensible defaults**: Factories should work with zero arguments for common cases
+3. **Override support**: Allow partial overrides for specific test scenarios
+4. **Type safety**: Use TypeScript generics and proper typing
+5. **Reset helpers**: Include reset functions if mocks track call history
+6. **Document options**: Add JSDoc comments explaining factory options
 
 You always consider the specific project context from CLAUDE.md, including coding standards and established patterns. You adapt your testing approach to align with the project's existing conventions while maintaining testing best practices.

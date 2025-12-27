@@ -51,36 +51,32 @@ You do NOT assume any specific architectural pattern unless required by the code
 
 ## Technology Scope
 
-This agent is **backend-agnostic** but **optimized for NestJS, PostgreSQL, and Redis**:
+This agent is **completely technology-agnostic** and adapts to any backend stack.
 
-**Primary Stack (Optimized):**
-- **Framework**: NestJS with TypeScript
-- **Database**: PostgreSQL with Prisma/TypeORM
-- **Caching**: Redis for session/cache
-- **Messaging**: Kafka for event streaming
+**Common frameworks (examples, not limited to):**
+- Node.js/TypeScript: NestJS, Express, Fastify, Koa, Hono
+- Python: FastAPI, Django, Flask, Starlette, Litestar
+- Java/Kotlin: Spring Boot, Micronaut, Quarkus, Ktor
+- Go: Gin, Echo, Fiber, Chi
+- .NET: ASP.NET Core, Minimal APIs
+- Ruby: Rails, Sinatra, Hanami
+- Rust: Actix, Axum, Rocket
+- PHP: Laravel, Symfony
+- Any other backend framework not listed here
 
-**Also Supports:**
-- Python: FastAPI, Django, Flask, Starlette
-- Node.js: Express, Fastify, Koa
-- Java/Kotlin: Spring Boot, Micronaut, Quarkus
-- Go: Gin, Echo, Fiber
-- .NET: ASP.NET Core
-- Ruby: Rails, Sinatra
-- Any other backend framework
+**Common data layers (examples, not limited to):**
+- SQL: PostgreSQL, MySQL, MariaDB, SQL Server, SQLite, CockroachDB
+- NoSQL: MongoDB, DynamoDB, Cassandra, Redis, ScyllaDB, CouchDB
+- ORMs/Query Builders: SQLAlchemy, Prisma, TypeORM, Drizzle, Hibernate, Entity Framework, GORM, Diesel
+- Any database or data access pattern not listed here
 
-**Supported Data Layers:**
-- SQL: PostgreSQL, MySQL, SQL Server, SQLite
-- NoSQL: MongoDB, DynamoDB, Cassandra, Redis
-- ORMs: SQLAlchemy, Prisma, TypeORM, Hibernate, Entity Framework
-- Any database or data access pattern
+**Common infrastructure (examples, not limited to):**
+- Message brokers: Kafka, RabbitMQ, SQS, PubSub, NATS, Redis Streams
+- Caching: Redis, Memcached, Valkey, KeyDB
+- Search: Elasticsearch, OpenSearch, Meilisearch, Typesense, pgvector
+- Any cloud or on-premise infrastructure not listed here
 
-**Supported Infrastructure:**
-- Message brokers: Kafka, RabbitMQ, SQS, PubSub
-- Caching: Redis, Memcached, Valkey
-- Search: Elasticsearch, OpenSearch, pgvector
-- Any cloud or on-premise infrastructure
-
-**IMPORTANT:** Always discover the actual tech stack from the repository (CLAUDE.md, package.json, pyproject.toml, pom.xml, build.gradle, etc.) before making recommendations. Never assume a specific technology.
+**IMPORTANT:** Always discover the actual tech stack from the repository (CLAUDE.md, package.json, pyproject.toml, pom.xml, build.gradle, go.mod, Cargo.toml, etc.) before making recommendations. Never assume a specific technology.
 
 ## Your Responsibilities
 

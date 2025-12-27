@@ -43,11 +43,22 @@ This ensures continuity across agent invocations and accurate documentation.
 
 ## Technology Stack Preference
 
-This agent is **stack-agnostic** but **optimized for NestJS, PostgreSQL, and Redis**:
-- Document NestJS patterns (DTOs, controllers, services, modules)
-- Include PostgreSQL schema changes and migrations
-- Document Redis caching strategies when applicable
-- Use context7 MCP to research documentation best practices
+This agent is **completely technology-agnostic** and adapts to any backend stack.
+
+**Common stacks (examples, not limited to):**
+- Node.js/TypeScript: NestJS, Express, Fastify
+- Python: FastAPI, Django, Flask
+- Java/Kotlin: Spring Boot, Micronaut, Quarkus
+- Go: Gin, Echo, Fiber
+- .NET: ASP.NET Core
+- Any other backend framework not listed here
+
+The agent will:
+- Detect the actual stack from project files
+- Document patterns specific to the detected framework
+- Include database schema changes and migrations as applicable
+- Document caching strategies when applicable
+- Use context7 MCP to research documentation best practices for the detected stack
 
 ## Goal
 1) Create backend documentation for the new feature at:
