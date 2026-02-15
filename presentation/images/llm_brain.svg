@@ -1,0 +1,69 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:rgb(88, 166, 255);stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:rgb(139, 92, 246);stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Brain Shape Outline (Abstract) -->
+  <path d="M100,150 Q100,50 200,50 Q300,50 300,150 Q300,250 200,250 Q100,250 100,150" 
+        fill="url(#grad1)" fill-opacity="0.1" />
+  
+  <!-- Nodes -->
+  <g filter="url(#glow)">
+    <!-- Central Cluster -->
+    <circle cx="200" cy="150" r="5" fill="#58a6ff" />
+    <circle cx="180" cy="130" r="4" fill="#8b5cf6" />
+    <circle cx="220" cy="130" r="4" fill="#8b5cf6" />
+    <circle cx="180" cy="170" r="4" fill="#58a6ff" />
+    <circle cx="220" cy="170" r="4" fill="#58a6ff" />
+    
+    <!-- Outer Nodes -->
+    <circle cx="140" cy="100" r="3" fill="#2ea043" opacity="0.8" />
+    <circle cx="260" cy="100" r="3" fill="#2ea043" opacity="0.8" />
+    <circle cx="140" cy="200" r="3" fill="#da3633" opacity="0.8" />
+    <circle cx="260" cy="200" r="3" fill="#da3633" opacity="0.8" />
+    
+    <circle cx="120" cy="150" r="3" fill="#c9d1d9" opacity="0.6" />
+    <circle cx="280" cy="150" r="3" fill="#c9d1d9" opacity="0.6" />
+  </g>
+  
+  <!-- Connections -->
+  <g stroke="#58a6ff" stroke-width="1" opacity="0.4">
+    <line x1="200" y1="150" x2="180" y2="130" />
+    <line x1="200" y1="150" x2="220" y2="130" />
+    <line x1="200" y1="150" x2="180" y2="170" />
+    <line x1="200" y1="150" x2="220" y2="170" />
+    
+    <line x1="180" y1="130" x2="140" y2="100" />
+    <line x1="220" y1="130" x2="260" y2="100" />
+    <line x1="180" y1="170" x2="140" y2="200" />
+    <line x1="220" y1="170" x2="260" y2="200" />
+    
+    <line x1="140" y1="100" x2="120" y2="150" />
+    <line x1="140" y1="200" x2="120" y2="150" />
+    <line x1="260" y1="100" x2="280" y2="150" />
+    <line x1="260" y1="200" x2="280" y2="150" />
+  </g>
+  
+  <!-- Data Flow Animation Particles -->
+  <circle cx="200" cy="150" r="2" fill="#fff">
+    <animate attributeName="cy" values="150;130;100;130;150" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="cx" values="200;180;140;180;200" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="1;0.5;0;0.5;1" dur="3s" repeatCount="indefinite" />
+  </circle>
+   <circle cx="200" cy="150" r="2" fill="#fff">
+    <animate attributeName="cy" values="150;170;200;170;150" dur="3s" begin="1.5s" repeatCount="indefinite" />
+    <animate attributeName="cx" values="200;220;260;220;200" dur="3s" begin="1.5s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="1;0.5;0;0.5;1" dur="3s" begin="1.5s" repeatCount="indefinite" />
+  </circle>
+
+</svg>
