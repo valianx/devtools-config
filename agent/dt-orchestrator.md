@@ -148,11 +148,26 @@ If `gh` is not available or the repo has no remote, skip GitHub updates silently
    - Use the issue body as task description
    - Use labels to help classify type (e.g., `bug` → fix, `enhancement` → feature)
    - If the issue body is empty or unclear, ask the user for clarification
-3. **Classify:**
+3. **MANDATORY — Move GitHub issue to "In Progress"** — if a GitHub issue was detected in step 2, you MUST move it now before doing anything else. Do NOT skip this step:
+   ```
+   # 1. Find the project number
+   gh project list --owner {owner} --format json
+
+   # 2. Get the project field IDs (find the "Status" field)
+   gh project field-list {project-number} --owner {owner} --format json
+
+   # 3. Get the item ID for this issue
+   gh project item-list {project-number} --owner {owner} --format json
+
+   # 4. Move to "In Progress"
+   gh project item-edit --project-id {project-id} --id {item-id} --field-id {status-field-id} --single-select-option-id {in-progress-option-id}
+   ```
+   If any command fails, **report the error to the user** — do not skip silently. Show the error message so we can debug it. Continue with the rest of the intake after reporting.
+4. **Classify:**
    - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research`
    - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
-3. **Ask clarifying questions** if requirements are ambiguous
-4. **Write** `session-docs/{feature-name}/00-task-intake.md`:
+5. **Ask clarifying questions** if requirements are ambiguous
+6. **Write** `session-docs/{feature-name}/00-task-intake.md`:
 
 ```markdown
 # Task: {feature-name}
@@ -299,10 +314,10 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
 
 **Owner:** You (orchestrator) — only runs if the task originated from a GitHub issue.
 
-1. **Comment on the issue** with a summary:
+1. **Comment on the issue** with a detailed summary. Read `session-docs/{feature-name}/04-validation.md` to extract the full list of acceptance criteria and their results.
    ```
    gh issue comment {number} --body "$(cat <<'EOF'
-   ## Completed by dev-team
+   ## Ready for review — dev-team
 
    **Branch:** {branch-name}
    **Commit:** {hash}
@@ -312,23 +327,41 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
    - {file list}
 
    ### Tests
-   - {count} passed
+   - {total} total | {passed} passed | {failed} failed
 
-   ### Validation
-   - {criteria count} criteria passed
+   ### Acceptance Criteria ({passed}/{total})
+   - [x] {criterion 1 — description}
+   - [x] {criterion 2 — description}
+   - [x] {criterion 3 — description}
+   (list ALL criteria from the QA validation report with pass/fail status)
+
+   ### QA Notes
+   - {any warnings or recommendations from the QA report}
    EOF
    )"
    ```
 
-2. **Close the issue:**
-   ```
-   gh issue close {number} --reason completed
-   ```
+   **Important:** Always list every acceptance criterion individually. Never summarize as "15/15 passed" without listing them. The reviewer needs to see exactly what was validated.
 
-3. **Move in project board** (if applicable):
-   - List project items: `gh project item-list --owner {owner} --format json`
-   - Find the item and move to "Done": `gh project item-edit --project-id {id} --id {item-id} --field-id {status-field-id} --single-select-option-id {done-option-id}`
-   - If project board detection fails, skip silently — do not block delivery
+2. **Move to "In Review"** in project board. This is mandatory — **never move to "Done"**. Follow these steps:
+   ```
+   # 1. Find the project number
+   gh project list --owner {owner} --format json
+
+   # 2. Get the project field IDs (find the "Status" field)
+   gh project field-list {project-number} --owner {owner} --format json
+
+   # 3. Get the item ID for this issue
+   gh project item-list {project-number} --owner {owner} --format json
+
+   # 4. Move to "In Review" (NOT "Done")
+   gh project item-edit --project-id {project-id} --id {item-id} --field-id {status-field-id} --single-select-option-id {in-review-option-id}
+   ```
+   - The target column is **"In Review"** — never "Done", never "Closed"
+   - If the board doesn't have an "In Review" column, leave it in "In Progress"
+   - If any command fails, **report the error to the user** — do not skip silently. Show the error message so we can debug it. Continue with delivery after reporting.
+
+3. **Do NOT close the issue.** Do NOT move to "Done". Leave it open in "In Review" for human review. Only the reviewer closes it after approval.
 
 This phase does NOT iterate — if GitHub update fails, report to the user but consider the task complete.
 
@@ -416,4 +449,4 @@ At the end of a successful orchestration, report to the user:
 7. **Branch:** {branch name}
 8. **Commit:** {hash and message}
 9. **Session docs:** `session-docs/{feature-name}/` contains full audit trail
-10. **GitHub:** issue #{number} commented and closed (if applicable)
+10. **GitHub:** issue #{number} commented and moved to "In Review" (if applicable)

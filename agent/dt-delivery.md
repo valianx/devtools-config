@@ -49,14 +49,14 @@ Determine `{feature_name}` in this order:
 
 ### Step 2 — Create feature branch
 
-**Always create a dedicated branch for the delivery commit.**
+**Always create a dedicated branch for the delivery commit. The base branch is always `main`.**
 
 - If already on a feature/fix/hotfix branch, use it as-is
-- If on `main`, `master`, or `develop`, create and switch to a new branch:
+- If on `main`, create and switch to a new branch:
   ```
   git checkout -b feature/{feature_name}
   ```
-- Never commit documentation directly to `main`, `master`, or `develop`
+- Never commit directly to `main`
 
 ### Step 3 — Create documentation
 
@@ -110,16 +110,33 @@ If the feature adds or modifies HTTP endpoints:
 
 ### Step 6 — Bump project version
 
-**Always bump the project version.** Detect the version file and increment appropriately:
+**This step is MANDATORY. Never skip it.**
+
+**Step 6.1 — Find the version file.** Use Glob to search the project root for these files in order:
+
+```
+package.json
+pyproject.toml
+Cargo.toml
+build.gradle
+pom.xml
+mix.exs
+version.txt
+VERSION
+```
+
+Read the first match and extract the current version.
+
+**Step 6.2 — Increment the version:**
 
 | File | How to bump |
 |------|-------------|
-| `package.json` | Increment `version` field (patch for fixes, minor for features) |
-| `pyproject.toml` | Increment `[project].version` or `[tool.poetry].version` |
-| `Cargo.toml` | Increment `[package].version` |
-| `build.gradle` / `pom.xml` | Increment version property |
-| `mix.exs` | Increment `@version` |
-| `version.txt` / `VERSION` | Increment content |
+| `package.json` | Edit the `"version"` field |
+| `pyproject.toml` | Edit `[project].version` or `[tool.poetry].version` |
+| `Cargo.toml` | Edit `[package].version` |
+| `build.gradle` / `pom.xml` | Edit version property |
+| `mix.exs` | Edit `@version` |
+| `version.txt` / `VERSION` | Replace content |
 
 **Version rules:**
 - **Patch** (0.0.X) — bug fixes, minor changes
@@ -127,15 +144,23 @@ If the feature adds or modifies HTTP endpoints:
 - **Major** (X.0.0) — only if the user explicitly requests it (breaking changes)
 - Default to **minor** for new features, **patch** for fixes
 - If unsure, ask the user which version increment to apply
-- If no version file is found, ask the user if they want one created
+
+**Step 6.3 — If NO version file is found**, create one automatically:
+- Detect the project ecosystem (Node → `package.json`, Python → `pyproject.toml`, Rust → `Cargo.toml`, etc.)
+- If no ecosystem is detectable, create `version.txt`
+- Start at version `0.1.0`
+
+**Step 6.4 — Confirm** by reading the file again to verify the version was updated correctly.
 
 ### Step 7 — Commit and push
 
-**Stage only delivery files:**
+**Stage delivery files (version file is MANDATORY):**
 ```
 git add docs/{feature_name}.md CHANGELOG.md {version-file}
 git add openapi/openapi.yaml  # only if updated
 ```
+
+**Before committing, verify the version file is staged:** run `git diff --cached {version-file}` to confirm the version bump is included. If it's not staged, stop and fix before committing.
 
 **Commit message** (conventional commits):
 - `docs({feature_name}): add documentation, changelog, and version bump for <summary>`
@@ -147,6 +172,31 @@ git add openapi/openapi.yaml  # only if updated
 - Stop and report if branch is protected or push fails
 
 Do NOT stage unrelated files.
+
+### Step 8 — Create Pull Request
+
+**Always create a PR targeting `main`.**
+
+```
+gh pr create --base main --title "{type}({feature_name}): {short summary}" --body "$(cat <<'EOF'
+## Summary
+- {bullet points of what was done}
+
+## Changes
+- {files changed}
+
+## Tests
+- {test results}
+
+## Version
+- {old} → {new}
+EOF
+)"
+```
+
+- Base branch is always `main`
+- Title follows conventional commits format
+- If PR creation fails (e.g., no remote, no gh), report to the user
 
 ---
 
@@ -180,6 +230,7 @@ Write delivery summary to `session-docs/{feature-name}/05-delivery.md`:
 - Branch: {branch-name}
 - Commit: {hash}
 - Message: {message}
+- PR: {url} (targeting main)
 
 ## Files Committed
 - {file list}
@@ -196,6 +247,7 @@ Your final message MUST include:
 4. OpenAPI updated (yes/no/N/A)
 5. Branch name and commit hash
 6. Commit message
+7. PR URL (targeting main)
 
 ## Quality Standards
 

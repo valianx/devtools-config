@@ -51,15 +51,22 @@ Before writing any test:
 
 ## Phase 1 — Test Plan (Change-Driven)
 
-Identify what changed and build the test plan around those changes **in order**:
+Identify what changed and build the test plan around those changes. **Tests MUST be ordered by the changes made — this is mandatory, not optional.**
 
 1. **Map the changes** — read session-docs, git diff, or ask the user what was modified. List every file, service, component, or endpoint that was added or changed.
-2. **Order by dependency** — start from the lowest-level changes (utilities, repositories, factories) up to the highest (controllers, pages, orchestrators).
+2. **Order by dependency** — start from the lowest-level changes (utilities, repositories, factories) up to the highest (controllers, pages, orchestrators). **Write tests in this exact order.** Each test file corresponds to a changed file.
 3. **For each changed unit, define:**
    - Scenarios to test (happy path, error cases, edge cases)
    - Test type (unit, integration, e2e)
    - Dependencies to mock (via factories)
    - Data fixtures needed
+4. **Present the ordered test plan to the user** before writing any test. Example:
+   ```
+   Test order:
+   1. user.repository.spec.ts → tests for user.repository.ts
+   2. auth.service.spec.ts → tests for auth.service.ts (depends on user.repository)
+   3. auth.controller.spec.ts → tests for auth.controller.ts (depends on auth.service)
+   ```
 
 ### Backend-specific scenarios *(backend/fullstack)*
 - API endpoint request/response validation
@@ -97,26 +104,55 @@ Write tests following these principles:
 
 ### Mock Factory Pattern (mandatory)
 
-All mocks MUST be created via factory functions. No inline mock definitions in test files.
+All mocks MUST be created via factory functions. **No inline mock definitions in test files. Ever.**
 
-- **One factory per dependency type** — each external service, repository, or browser API gets its own factory file
+#### Step 1 — Find or create the mocks directory
+
+**Before writing any test**, check if a centralized mocks/factories directory exists:
+
+```
+Use Glob to search for:
+  {test-directory}/factories/
+  {test-directory}/mocks/
+  __tests__/factories/
+  __tests__/mocks/
+  tests/factories/
+  tests/mocks/
+  test/factories/
+  test/mocks/
+```
+
+- If found → use the existing directory and extend it
+- If NOT found → **create it immediately** in the project's test directory:
+  ```
+  {test-directory}/mocks/
+    index.ts          # re-exports all factories
+  ```
+
+#### Step 2 — Create factories for every dependency
+
+For each external dependency mocked in the tests:
+- **One factory file per dependency type** — `{dependency}.mock.ts`
 - **Sensible defaults** — factories work with zero arguments for common cases
 - **Override support** — accept partial overrides for specific test scenarios
-- **Centralized location** — place factories in the project's test utilities directory (e.g., `tests/factories/`, `__tests__/factories/`, or alongside existing test helpers)
-- **Re-export via index** — create an index file that re-exports all factories for clean imports
+- **Re-export via index** — add each new factory to the index file
 - **Mock minimalism** — only mock what's necessary to isolate the unit under test
 
-**Factory structure:**
+**Final directory structure:**
 ```
 {test-directory}/
-  factories/
-    index.ts          # re-exports all factories
-    {dependency}.factory.ts  # one per external dependency
+  mocks/
+    index.ts                    # re-exports all factories
+    {dependency-a}.mock.ts      # one per external dependency
+    {dependency-b}.mock.ts
   fixtures/
-    {entity}.fixture.ts      # test data
+    {entity}.fixture.ts         # test data (if needed)
 ```
 
-If the project already has factories, reuse and extend them. If not, create the factory directory and explain the pattern to the user.
+#### Rules
+- **Never define mocks inline** in test files — always import from the mocks directory
+- **Always reuse** existing factories before creating new ones
+- **Every mock factory must be importable** from the index file
 
 ### Backend testing guidelines
 - Mock external services (HTTP clients, message brokers, third-party APIs)
