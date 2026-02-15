@@ -1,0 +1,24 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <g transform="translate(100, 160)" filter="url(#shadow)">
+    <!-- Bottom Layer -->
+    <path d="M-60,0 L0,30 L60,0 L0,-30 Z" fill="#2ea043" stroke="#fff" stroke-width="1">
+       <animate attributeName="transform" values="translate(0,0);translate(0,-5);translate(0,0)" dur="3s" repeatCount="indefinite" />
+    </path>
+    
+    <!-- Middle Layer -->
+    <path d="M-60,-40 L0,-10 L60,-40 L0,-70 Z" fill="#8b5cf6" stroke="#fff" stroke-width="1">
+      <animate attributeName="transform" values="translate(0,0);translate(0,-5);translate(0,0)" dur="3s" begin="0.5s" repeatCount="indefinite" />
+    </path>
+    
+    <!-- Top Layer -->
+    <path d="M-60,-80 L0,-50 L60,-80 L0,-110 Z" fill="#58a6ff" stroke="#fff" stroke-width="1">
+      <animate attributeName="transform" values="translate(0,0);translate(0,-5);translate(0,0)" dur="3s" begin="1s" repeatCount="indefinite" />
+    </path>
+  </g>
+</svg>

@@ -1,0 +1,48 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gradEco" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#58a6ff;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#0a0e12;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <circle cx="150" cy="150" r="140" fill="url(#gradEco)" />
+  
+  <!-- Central Hub -->
+  <circle cx="150" cy="150" r="15" fill="#fff" opacity="0.9">
+    <animate attributeName="r" values="15;18;15" dur="3s" repeatCount="indefinite" />
+     <animate attributeName="opacity" values="0.9;0.5;0.9" dur="3s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Nodes -->
+  <g stroke="rgba(255,255,255,0.3)" stroke-width="1">
+    <!-- Inner Ring -->
+    <line x1="150" y1="150" x2="150" y2="80" />
+    <line x1="150" y1="150" x2="220" y2="150" />
+    <line x1="150" y1="150" x2="150" y2="220" />
+    <line x1="150" y1="150" x2="80" y2="150" />
+    <line x1="150" y1="150" x2="100" y2="100" />
+    <line x1="150" y1="150" x2="200" y2="200" />
+    
+    <!-- Connections -->
+    <line x1="150" y1="80" x2="100" y2="100" />
+    <line x1="220" y1="150" x2="200" y2="200" />
+  </g>
+  
+  <!-- Orbiting Particles -->
+  <circle cx="150" cy="80" r="6" fill="#2ea043" />
+  <circle cx="220" cy="150" r="6" fill="#58a6ff" />
+  <circle cx="150" cy="220" r="6" fill="#da3633" />
+  <circle cx="80" cy="150" r="6" fill="#8b5cf6" />
+  <circle cx="100" cy="100" r="5" fill="#f1e05a" />
+  <circle cx="200" cy="200" r="5" fill="#fff" />
+  
+  <g>
+     <circle cx="180" cy="120" r="3" fill="#fff" opacity="0.6">
+        <animateTransform attributeName="transform" type="rotate" from="0 150 150" to="360 150 150" dur="10s" repeatCount="indefinite" />
+     </circle>
+     <circle cx="120" cy="180" r="3" fill="#fff" opacity="0.6">
+        <animateTransform attributeName="transform" type="rotate" from="180 150 150" to="540 150 150" dur="10s" repeatCount="indefinite" />
+     </circle>
+  </g>
+</svg>

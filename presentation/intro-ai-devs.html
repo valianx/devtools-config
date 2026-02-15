@@ -33,6 +33,9 @@
 
         body {
             background-color: var(--bg-dark);
+            margin: 0;
+            overflow: hidden;
+            /* Prevent scrollbars from canvas */
         }
 
         .reveal {
@@ -53,9 +56,7 @@
         /* Typography Enhancements */
         .reveal h1 {
             font-size: 2.5em;
-            /* Reduced from 3.2em */
             margin-bottom: 20px;
-            /* Reduced from 20px - kept same relative but font smaller */
             background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -64,10 +65,8 @@
 
         .reveal h2 {
             font-size: 1.6em;
-            /* Reduced from 1.8em */
             color: #fff;
             margin-bottom: 10px;
-            /* Reduced from 20px */
             position: relative;
             display: inline-block;
         }
@@ -76,7 +75,6 @@
             content: '';
             position: absolute;
             bottom: -5px;
-            /* Reduced from -10px */
             left: 50%;
             transform: translateX(-50%);
             width: 60px;
@@ -87,11 +85,9 @@
 
         .reveal h3 {
             font-size: 1em;
-            /* Reduced from 1.1em */
             font-weight: 400;
             color: var(--text-muted);
             margin-bottom: 20px;
-            /* Reduced from 40px */
         }
 
         .highlight {
@@ -103,28 +99,26 @@
             display: flex;
             justify-content: center;
             gap: 20px;
-            /* Reduced from 24px */
             flex-wrap: wrap;
             margin-top: 20px;
-            /* Reduced from 30px */
         }
 
         .glass-card {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 20px;
-            /* Reduced from 24px */
-            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
         .glass-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(88, 166, 255, 0.5);
-            box-shadow: 0 12px 40px rgba(88, 166, 255, 0.15);
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(88, 166, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(88, 166, 255, 0.2), 0 0 20px rgba(88, 166, 255, 0.1) inset;
+            z-index: 10;
         }
 
         /* Feature Cards */
@@ -156,14 +150,15 @@
         }
 
         .code-snippet {
-            margin-top: 12px;
+            margin-top: 10px;
             background: rgba(10, 14, 18, 0.8);
             border-left: 3px solid var(--accent-secondary);
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.65em;
+            font-size: 0.5em;
             color: #d1d5db;
+            line-height: 1.4;
         }
 
         /* Context Visual Bar */
@@ -190,12 +185,10 @@
             align-items: center;
             justify-content: center;
             font-size: 0.45em;
-            /* Further reduced from 0.5em */
             font-weight: 700;
             color: white;
             text-transform: uppercase;
             letter-spacing: 0.2px;
-            /* Reduced from 0.5px */
             transition: width 1s ease;
         }
 
@@ -204,10 +197,8 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            /* Reduced from 20px */
             max-width: 1000px;
             margin: 10px auto 0;
-            /* Reduced top margin significantly */
         }
 
         .tool-item {
@@ -216,7 +207,6 @@
             text-align: left;
             height: 100%;
             padding: 15px;
-            /* Reduced padding specifically for tools */
         }
 
         .tool-header {
@@ -271,7 +261,7 @@
         /* Tips Cards */
         .tip-status {
             font-family: 'Consolas', monospace;
-            font-size: 0.6em;
+            font-size: 0.5em;
             padding: 6px 10px;
             border-radius: 6px;
             margin: 8px 0;
@@ -323,7 +313,7 @@
                     <div style="text-align: left;">
                         <h2>¿Qué es un LLM?</h2>
                         <h3>Large Language Model</h3>
-                        <img src="images/llm_brain.svg" alt="AI Brain"
+                        <img src="images/llm_structure.svg" alt="LLM Structure"
                             style="width: 100%; max-width: 350px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-top: 10px; background: rgba(0,0,0,0.2);">
                     </div>
 
@@ -334,8 +324,7 @@
                                 con
                                 millones de repositorios de código, documentación y libros.</p>
                         </div>
-                        <div class="glass-card feature-card"
-                            style="border-color: rgba(248, 81, 73, 0.3);">
+                        <div class="glass-card feature-card" style="border-color: rgba(248, 81, 73, 0.3);">
                             <h4><i class="fa-solid fa-robot"></i> Qué NO hace</h4>
                             <p>No ejecuta código mentalmente. No tiene memoria persistente fuera de la ventana de
                                 contexto.
@@ -347,8 +336,15 @@
 
             <!-- 3. PROMPT & CONTEXT -->
             <section>
-                <h2>Prompt y Contexto</h2>
-                <h3>Conceptos fundamentales</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                    <div style="text-align: left;">
+                        <h2>Prompt y Contexto</h2>
+                        <h3>Conceptos fundamentales</h3>
+                    </div>
+                    <img src="images/prompt_flow.svg"
+                        style="height: 120px; border-radius: 12px; background: rgba(255,255,255,0.05); padding: 10px;">
+                </div>
+
                 <div class="card-container">
                     <div class="glass-card feature-card">
                         <h4><i class="fa-solid fa-terminal"></i> Prompt</h4>
@@ -409,94 +405,106 @@
 
             <!-- 6. TOOLS GRID -->
             <section>
-                <h2>Ecosistema de Tools</h2>
-                <div class="tools-grid">
-                    <!-- GitHub Copilot -->
-                    <div class="glass-card tool-item">
-                        <div class="tool-header">
-                            <div class="tool-icon" style="background: #238636;"><i class="fa-brands fa-github"></i>
-                            </div>
-                            <div>
-                                <div class="tool-name">Copilot</div>
-                                <div class="tool-company">GitHub</div>
-                            </div>
-                        </div>
-                        <div class="tool-desc">Standard de industria. Autocompletado "ghost text" rápido dentro del
-                            editor.</div>
-                        <div class="tool-tag" style="background: rgba(35, 134, 54, 0.2); color: #3fb950;">Completion
-                        </div>
+                <div style="display: grid; grid-template-columns: 30% 1fr; gap: 24px; align-items: start;">
+                    <div style="text-align: left;">
+                        <h2 style="font-size: 1.6em; line-height: 1.1; margin-bottom: 20px; display: block; text-align: left;">Ecosistema<br>de Tools</h2>
+                        <img src="images/ecosystem_network.svg" style="width: 100%; max-width: 200px; opacity: 0.8; margin-top: 40px;">
                     </div>
 
-                    <!-- Claude Code aka "The Agent" -->
-                    <div class="glass-card tool-item" style="border-color: rgba(139, 92, 246, 0.5);">
-                        <div class="tool-header">
-                            <div class="tool-icon" style="background: #872e48;"><i class="fa-solid fa-robot"></i></div>
-                            <div>
-                                <div class="tool-name">Claude Code</div>
-                                <div class="tool-company">Anthropic</div>
+                    <div class="tools-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0;">
+                        <!-- GitHub Copilot -->
+                        <div class="glass-card tool-item">
+                            <div class="tool-header">
+                                <div class="tool-icon" style="background: #238636;"><i class="fa-brands fa-github"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">Copilot</div>
+                                    <div class="tool-company">GitHub</div>
+                                </div>
+                            </div>
+                            <div class="tool-desc">Standard de industria. Autocompletado "ghost text" rápido dentro del
+                                editor.</div>
+                            <div class="tool-tag" style="background: rgba(35, 134, 54, 0.2); color: #3fb950;">Completion
                             </div>
                         </div>
-                        <div class="tool-desc">Agente autónomo en terminal. Lee, piensa y edita archivos complejos.
-                        </div>
-                        <div class="tool-tag" style="background: rgba(135, 46, 72, 0.3); color: #f472b6;">Agent CLI
-                        </div>
-                    </div>
 
-                    <!-- Cursor -->
-                    <div class="glass-card tool-item">
-                        <div class="tool-header">
-                            <div class="tool-icon" style="background: #fff; color: #000;"><i
-                                    class="fa-solid fa-arrow-pointer"></i></div>
-                            <div>
-                                <div class="tool-name">Cursor</div>
-                                <div class="tool-company">Anysphere</div>
+                        <!-- Claude Code aka "The Agent" -->
+                        <div class="glass-card tool-item" style="border-color: rgba(139, 92, 246, 0.5);">
+                            <div class="tool-header">
+                                <div class="tool-icon" style="background: #872e48;"><i class="fa-solid fa-robot"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">Claude Code</div>
+                                    <div class="tool-company">Anthropic</div>
+                                </div>
+                            </div>
+                            <div class="tool-desc">Agente autónomo en terminal. Lee, piensa y edita archivos complejos.
+                            </div>
+                            <div class="tool-tag" style="background: rgba(135, 46, 72, 0.3); color: #f472b6;">Agent CLI
                             </div>
                         </div>
-                        <div class="tool-desc">Fork de VS Code. La mejor experiencia integrada de chat + edición
-                            ("Ctrl+K").</div>
-                        <div class="tool-tag" style="background: rgba(255, 255, 255, 0.1); color: #fff;">IDE</div>
-                    </div>
 
-                    <!-- Codex/OpenAI -->
-                    <div class="glass-card tool-item">
-                        <div class="tool-header">
-                            <div class="tool-icon" style="background: #10a37f;"><i class="fa-solid fa-bolt"></i></div>
-                            <div>
-                                <div class="tool-name">OpenAI API</div>
-                                <div class="tool-company">OpenAI</div>
+                        <!-- Cursor -->
+                        <div class="glass-card tool-item">
+                            <div class="tool-header">
+                                <div class="tool-icon" style="background: #fff; color: #000;"><i
+                                        class="fa-solid fa-arrow-pointer"></i></div>
+                                <div>
+                                    <div class="tool-name">Cursor</div>
+                                    <div class="tool-company">Anysphere</div>
+                                </div>
                             </div>
+                            <div class="tool-desc">Fork de VS Code. La mejor experiencia integrada de chat + edición
+                                ("Ctrl+K").</div>
+                            <div class="tool-tag" style="background: rgba(255, 255, 255, 0.1); color: #fff;">IDE</div>
                         </div>
-                        <div class="tool-desc">El motor detrás de todo. CLI experimental y playground.</div>
-                        <div class="tool-tag" style="background: rgba(16, 163, 127, 0.2); color: #10a37f;">Model</div>
-                    </div>
 
-                    <!-- Windsurf -->
-                    <div class="glass-card tool-item">
-                        <div class="tool-header">
-                            <div class="tool-icon" style="background: #0ea5e9;"><i class="fa-solid fa-wind"></i></div>
-                            <div>
-                                <div class="tool-name">Windsurf</div>
-                                <div class="tool-company">Codeium</div>
+                        <!-- Codex/OpenAI -->
+                        <div class="glass-card tool-item">
+                            <div class="tool-header">
+                                <div class="tool-icon" style="background: #10a37f;"><i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">OpenAI API</div>
+                                    <div class="tool-company">OpenAI</div>
+                                </div>
+                            </div>
+                            <div class="tool-desc">El motor detrás de todo. CLI experimental y playground.</div>
+                            <div class="tool-tag" style="background: rgba(16, 163, 127, 0.2); color: #10a37f;">Model
                             </div>
                         </div>
-                        <div class="tool-desc">Editor con "Flow". Awareness profundo del contexto del proyecto.</div>
-                        <div class="tool-tag" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8;">IDE</div>
-                    </div>
 
-                    <!-- Antigravity -->
-                    <div class="glass-card tool-item">
-                        <div class="tool-header">
-                            <div class="tool-icon"
-                                style="background: linear-gradient(135deg, #4285F4, #34A853, #FBBC05, #EA4335);"><i
-                                    class="fa-solid fa-star"></i></div>
-                            <div>
-                                <div class="tool-name">Antigravity</div>
-                                <div class="tool-company">Google</div>
+                        <!-- Windsurf -->
+                        <div class="glass-card tool-item">
+                            <div class="tool-header">
+                                <div class="tool-icon" style="background: #0ea5e9;"><i class="fa-solid fa-wind"></i>
+                                </div>
+                                <div>
+                                    <div class="tool-name">Windsurf</div>
+                                    <div class="tool-company">Codeium</div>
+                                </div>
                             </div>
+                            <div class="tool-desc">Editor con "Flow". Awareness profundo del contexto del proyecto.
+                            </div>
+                            <div class="tool-tag" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8;">IDE</div>
                         </div>
-                        <div class="tool-desc">IDE Agent-First. Orquestación de múltiples agentes para tareas complejas.
-                        </div>
-                        <div class="tool-tag" style="background: rgba(66, 133, 244, 0.2); color: #8ab4f8;">Next Gen
+
+                        <!-- Antigravity -->
+                        <div class="glass-card tool-item">
+                            <div class="tool-header">
+                                <div class="tool-icon"
+                                    style="background: linear-gradient(135deg, #4285F4, #34A853, #FBBC05, #EA4335);"><i
+                                        class="fa-solid fa-star"></i></div>
+                                <div>
+                                    <div class="tool-name">Antigravity</div>
+                                    <div class="tool-company">Google</div>
+                                </div>
+                            </div>
+                            <div class="tool-desc">IDE Agent-First. Orquestación de múltiples agentes para tareas
+                                complejas.
+                            </div>
+                            <div class="tool-tag" style="background: rgba(66, 133, 244, 0.2); color: #8ab4f8;">Next Gen
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -505,7 +513,12 @@
             <!-- 7. OUR CHOICE -->
             <section>
                 <h2>Nuestro Stack</h2>
-                <h3 class="highlight" style="font-size: 1.5em; margin-bottom: 15px;">Claude Code</h3>
+                <div
+                    style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 20px;">
+                    <h3 class="highlight" style="font-size: 1.5em; margin: 0;">Claude Code</h3>
+                    <img src="images/stack_layers.svg" style="width: 50px; opacity: 0.8;">
+                </div>
+
                 <div class="card-container">
                     <div class="glass-card feature-card" style="max-width: 220px; text-align: center; padding: 14px;">
                         <i class="fa-solid fa-glasses"
@@ -545,15 +558,18 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="js/background-animation.js"></script>
     <script>
         Reveal.initialize({
             hash: true,
-            transition: 'cubic',
-            transitionSpeed: 'fast',
-            backgroundTransition: 'zoom',
+            transition: 'convex', /* Modern 3D transition */
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
             controls: true,
             progress: true,
             center: true,
+            mouseWheel: true, /* Enable scrolling */
+            slideNumber: true, /* Show progress */
             width: 1200,
             height: 750,
             margin: 0.04,

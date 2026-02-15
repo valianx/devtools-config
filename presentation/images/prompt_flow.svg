@@ -1,0 +1,38 @@
+<svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradFlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#da3633;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2ea043;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#58a6ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Prompt Input -->
+  <rect x="20" y="100" width="80" height="50" rx="8" fill="none" stroke="#da3633" stroke-width="2" />
+  <text x="60" y="130" font-family="monospace" font-size="12" fill="#da3633" text-anchor="middle">INPUT</text>
+  
+  <!-- Arrow -->
+  <path d="M110,125 L150,125" stroke="#fff" stroke-width="2" marker-end="url(#arrowhead)" />
+  
+  <!-- Context Processing -->
+  <path d="M160,50 L300,50 L300,200 L160,200 Z" fill="rgba(88, 166, 255, 0.1)" stroke="#58a6ff" stroke-width="2" stroke-dasharray="5,5" />
+  <text x="230" y="40" font-family="sans-serif" font-size="14" fill="#58a6ff" text-anchor="middle">CONTEXT WINDOW</text>
+  
+  <!-- Elements inside context -->
+  <rect x="170" y="70" width="110" height="20" rx="4" fill="#2ea043" opacity="0.6" />
+  <rect x="170" y="100" width="80" height="20" rx="4" fill="#8b5cf6" opacity="0.6" />
+  <rect x="170" y="130" width="100" height="20" rx="4" fill="#da3633" opacity="0.6" />
+  
+  <!-- Output Arrow -->
+  <path d="M300,125 L340,125" stroke="#fff" stroke-width="2" />
+  
+  <!-- Output -->
+  <circle cx="370" cy="125" r="25" fill="none" stroke="#2ea043" stroke-width="3" />
+  <text x="370" y="130" font-family="monospace" font-size="10" fill="#2ea043" text-anchor="middle">RES</text>
+
+  <!-- Flow Particles -->
+  <circle cx="110" cy="125" r="3" fill="#fff">
+    <animate attributeName="cx" from="110" to="150" dur="1s" repeatCount="indefinite" />
+     <animate attributeName="opacity" values="1;0" dur="1s" repeatCount="indefinite" />
+  </circle>
+</svg>

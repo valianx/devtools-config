@@ -1,0 +1,51 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradStructure" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#58a6ff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.6" />
+    </linearGradient>
+    <filter id="glowStructure">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g filter="url(#glowStructure)">
+    <!-- Abstract Neural Layers -->
+    <rect x="50" y="50" width="20" height="200" rx="10" fill="url(#gradStructure)" opacity="0.3" />
+    <rect x="190" y="50" width="20" height="200" rx="10" fill="url(#gradStructure)" opacity="0.5" />
+    <rect x="330" y="50" width="20" height="200" rx="10" fill="url(#gradStructure)" opacity="0.8" />
+    
+    <!-- Connecting Lines -->
+    <line x1="70" y1="80" x2="190" y2="100" stroke="#58a6ff" stroke-width="1" opacity="0.4" />
+    <line x1="70" y1="150" x2="190" y2="150" stroke="#58a6ff" stroke-width="1" opacity="0.4" />
+    <line x1="70" y1="220" x2="190" y2="200" stroke="#58a6ff" stroke-width="1" opacity="0.4" />
+    
+    <line x1="210" y1="100" x2="330" y2="80" stroke="#8b5cf6" stroke-width="1" opacity="0.5" />
+    <line x1="210" y1="150" x2="330" y2="150" stroke="#8b5cf6" stroke-width="1" opacity="0.5" />
+    <line x1="210" y1="200" x2="330" y2="220" stroke="#8b5cf6" stroke-width="1" opacity="0.5" />
+    
+    <!-- Data Points -->
+    <circle cx="60" cy="80" r="6" fill="#fff" opacity="0.8"/>
+    <circle cx="60" cy="150" r="6" fill="#fff" opacity="0.8"/>
+    <circle cx="60" cy="220" r="6" fill="#fff" opacity="0.8"/>
+    
+    <circle cx="200" cy="100" r="8" fill="#58a6ff"/>
+    <circle cx="200" cy="150" r="8" fill="#58a6ff"/>
+    <circle cx="200" cy="200" r="8" fill="#58a6ff"/>
+    
+    <circle cx="340" cy="80" r="6" fill="#8b5cf6"/>
+    <circle cx="340" cy="150" r="6" fill="#8b5cf6"/>
+    <circle cx="340" cy="220" r="6" fill="#8b5cf6"/>
+  </g>
+  
+  <!-- "Token" flow animation -->
+  <circle cx="60" cy="80" r="4" fill="#fff">
+    <animate attributeName="cx" values="60;200;340" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="cy" values="80;100;80" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="1;0.5;0" dur="2s" repeatCount="indefinite" />
+  </circle>
+</svg>
