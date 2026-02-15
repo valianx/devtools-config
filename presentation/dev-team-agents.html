@@ -1,167 +1,337 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dev Team Agent System</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --r-background-color: #0d1117;
-            --r-main-color: #c9d1d9;
-            --r-heading-color: #f0f6fc;
-            --r-link-color: #58a6ff;
+            --bg-dark: #0a0e12;
+            --glass-bg: rgba(22, 27, 34, 0.7);
+            --glass-border: rgba(48, 54, 61, 0.6);
+            --accent-primary: #58a6ff;
+            --accent-secondary: #8b5cf6;
+            --accent-success: #2ea043;
+            --accent-danger: #da3633;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+
+            /* Agent specific colors */
+            --agent-architect: #d2a8ff;
+            --agent-implementer: #7ee787;
+            --agent-tester: #ff7b72;
+            --agent-qa: #79c0ff;
+            --agent-delivery: #ffa657;
+            --agent-init: #3fb950;
+            --agent-orchestrator: #58a6ff;
         }
-        .reveal { font-family: 'Segoe UI', system-ui, sans-serif; }
-        .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; text-transform: none; }
-        .reveal h1 { font-size: 2.2em; }
-        .reveal h2 { font-size: 1.6em; margin-bottom: 12px; }
-        .reveal h3 { font-size: 1.05em; color: #8b949e; }
 
-        /* Agent colors */
-        .agent-architect { color: #d2a8ff; }
-        .agent-implementer { color: #7ee787; }
-        .agent-tester { color: #ff7b72; }
-        .agent-qa { color: #79c0ff; }
-        .agent-delivery { color: #ffa657; }
-        .agent-init { color: #3fb950; }
-        .agent-orchestrator { color: #58a6ff; }
+        body {
+            background-color: var(--bg-dark);
+            margin: 0;
+            overflow: hidden;
+        }
 
-        /* Problem cards */
-        .problems {
+        .reveal {
+            font-family: var(--font-body);
+            color: var(--text-main);
+        }
+
+        .reveal h1,
+        .reveal h2,
+        .reveal h3,
+        .reveal h4 {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            text-transform: none;
+            letter-spacing: -0.01em;
+        }
+
+        /* Typography Enhancements */
+        .reveal h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .reveal h2 {
+            font-size: 1.6em;
+            color: #fff;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .reveal h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+
+        .reveal h3 {
+            font-size: 1em;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .highlight {
+            color: var(--accent-primary);
+        }
+
+        /* Glass Cards System */
+        .card-container {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-top: 32px;
-        }
-        .problem-card {
-            background: #161b22;
-            border: 1px solid #f8514933;
-            border-radius: 12px;
-            padding: 20px;
-            width: 220px;
-            text-align: center;
-        }
-        .problem-card .icon { font-size: 1.8em; margin-bottom: 8px; }
-        .problem-card h4 { margin: 0 0 6px 0; font-size: 0.85em; color: #f85149; }
-        .problem-card p { margin: 0; font-size: 0.55em; color: #8b949e; line-height: 1.4; }
-
-        /* Agent row */
-        .agents-row {
-            display: flex;
-            justify-content: center;
-            gap: 14px;
             flex-wrap: wrap;
-            margin-top: 28px;
+            margin-top: 20px;
         }
-        .agent-chip {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 10px;
-            padding: 14px 18px;
-            text-align: center;
-            width: 170px;
-        }
-        .agent-chip .emoji { font-size: 1.6em; }
-        .agent-chip .name { font-size: 0.7em; font-weight: 700; margin-top: 6px; }
-        .agent-chip .role { font-size: 0.52em; color: #8b949e; margin-top: 2px; }
 
-        /* Comparison table */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(88, 166, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(88, 166, 255, 0.2), 0 0 20px rgba(88, 166, 255, 0.1) inset;
+            z-index: 10;
+        }
+
+        /* Feature Cards */
+        .feature-card {
+            flex: 1;
+            min-width: 200px;
+            text-align: left;
+        }
+
+        .feature-card h4 {
+            color: #fff;
+            font-size: 1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-card .icon {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .feature-card p {
+            font-size: 0.7em;
+            line-height: 1.5;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        /* Agent Chip Styling */
+        .agent-chip {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            width: 140px;
+            transition: all 0.3s ease;
+        }
+
+        .agent-chip:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-primary);
+        }
+
+        .agent-chip .emoji {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .agent-chip .name {
+            font-size: 0.8em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-family: 'Consolas', monospace;
+        }
+
+        .agent-chip .role {
+            font-size: 0.5em;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* Comparison Table */
+        .glass-table-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 10px;
+            margin: 10px auto;
+            max-width: 900px;
+        }
+
         .compare-table {
-            width: 90%;
-            margin: 20px auto 0;
+            width: 100%;
             border-collapse: collapse;
             font-size: 0.65em;
         }
-        .compare-table th, .compare-table td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #21262d;
-        }
-        .compare-table th { color: #8b949e; font-weight: 600; }
-        .compare-table .check { color: #3fb950; }
-        .compare-table .cross { color: #f85149; }
 
-        /* Roadmap */
-        .roadmap {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 32px;
-        }
-        .roadmap-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 18px;
-            width: 280px;
+        .compare-table th,
+        .compare-table td {
+            padding: 8px 12px;
             text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .roadmap-card .step { font-size: 1.8em; font-weight: 800; }
-        .roadmap-card h4 { margin: 6px 0 4px 0; font-size: 0.8em; color: #f0f6fc; }
-        .roadmap-card p { margin: 0; font-size: 0.55em; color: #8b949e; line-height: 1.4; }
 
-        /* Flow step */
+        .compare-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .compare-table .check {
+            color: var(--accent-success);
+        }
+
+        .compare-table .cross {
+            color: var(--accent-danger);
+        }
+
+        /* Flow Steps */
         .flow-step {
-            background: #161b22;
+            background: rgba(22, 27, 34, 0.4);
             border-left: 4px solid;
-            padding: 10px 18px;
-            margin: 7px auto;
+            padding: 8px 16px;
+            margin: 6px auto;
             border-radius: 0 8px 8px 0;
             text-align: left;
-            font-size: 0.7em;
-            max-width: 600px;
+            font-size: 0.65em;
+            max-width: 700px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.2s;
         }
 
-        /* Command */
-        .command-box {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 10px;
-            padding: 16px 24px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 0.95em;
-            color: #7ee787;
-            margin: 16px auto;
-            max-width: 520px;
+        .flow-step:hover {
+            background: rgba(22, 27, 34, 0.8);
+            transform: translateX(5px);
         }
-        .command-box .prompt { color: #8b949e; }
-        .command-box .comment { color: #484f58; font-size: 0.8em; }
+
+        .flow-step strong {
+            font-family: 'Consolas', monospace;
+            flex: 0 0 160px;
+            text-align: left;
+        }
+
+        /* Roadmap */
+        .roadmap-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .roadmap-step {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: 800;
+            opacity: 0.5;
+        }
+
+        /* Utility */
+        .text-sm {
+            font-size: 0.6em !important;
+            color: var(--text-muted);
+        }
     </style>
 </head>
+
 <body>
     <div class="reveal">
         <div class="slides">
 
             <!-- 1. TITLE -->
             <section data-background-gradient="radial-gradient(circle at 20% 50%, #1a1f35 0%, #0d1117 70%)">
-                <h1>Dev Team<br><span style="color: #58a6ff;">Agent System</span></h1>
-                <h3 style="margin-top: 24px;">Agentes de IA que cubren los roles que nos faltan</h3>
+                <div
+                    style="background: radial-gradient(circle, rgba(88,166,255,0.1) 0%, rgba(0,0,0,0) 70%); padding: 60px; border-radius: 50%; display: inline-block;">
+                    <h1>Dev Team <span class="highlight">Agent System</span></h1>
+                    <h3>Agentes de IA que cubren los roles que nos faltan</h3>
+                    <div style="font-size: 2em; opacity: 0.6; margin-top: 20px;">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                </div>
             </section>
 
             <!-- 2. THE PROBLEM -->
             <section>
                 <h2>Nuestro equipo hoy</h2>
                 <h3>Devs que cubren todos los roles sin dedicación</h3>
-                <div class="problems">
-                    <div class="problem-card">
-                        <div class="icon">&#128027;</div>
+                <div class="card-container">
+                    <div class="glass-card feature-card">
+                        <div class="icon" style="color: var(--accent-danger);"><i class="fa-solid fa-bug"></i></div>
                         <h4>Bugs</h4>
                         <p>Sin QA dedicado, los errores llegan a producción</p>
                     </div>
-                    <div class="problem-card">
-                        <div class="icon">&#9203;</div>
+                    <div class="glass-card feature-card">
+                        <div class="icon" style="color: var(--accent-secondary);"><i
+                                class="fa-solid fa-hourglass-start"></i></div>
                         <h4>Lentitud</h4>
                         <p>Cada dev diseña, codea, testea y documenta solo</p>
                     </div>
-                    <div class="problem-card">
-                        <div class="icon">&#128260;</div>
+                    <div class="glass-card feature-card">
+                        <div class="icon" style="color: var(--text-muted);"><i class="fa-solid fa-ruler-combined"></i>
+                        </div>
                         <h4>Sin estándares</h4>
                         <p>Cada persona trabaja distinto, tests opcionales</p>
                     </div>
-                    <div class="problem-card">
-                        <div class="icon">&#128200;</div>
+                    <div class="glass-card feature-card">
+                        <div class="icon" style="color: var(--accent-primary);"><i class="fa-solid fa-chart-line"></i>
+                        </div>
                         <h4>Deuda técnica</h4>
                         <p>Código difícil de mantener, cambios riesgosos</p>
                     </div>
@@ -170,33 +340,72 @@
 
             <!-- 3. THE SOLUTION: THE AGENTS -->
             <section>
-                <h2>Agentes especializados</h2>
-                <h3>Cada uno cubre un rol que hoy no tenemos</h3>
-                <div class="agents-row">
-                    <div class="agent-chip">
-                        <div class="emoji">&#128208;</div>
-                        <div class="name agent-architect">architect</div>
-                        <div class="role">Diseña soluciones<br>y evalúa riesgos</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
+                    <div style="text-align: left;">
+                        <h2>Agentes Especializados</h2>
+                        <h3 style="font-size: 0.9em; margin-bottom: 30px;">Cada uno cubre un rol vital</h3>
+                        <div
+                            style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; display: flex; justify-content: center; align-items: center;">
+                            <img src="images/ecosystem_network.svg" alt="Agent Network"
+                                style="width: 100%; max-width: 300px; filter: drop-shadow(0 0 20px rgba(88,166,255,0.3));">
+                        </div>
+                        <p class="text-sm" style="margin-top: 20px; text-align: center;">Trabajan en orquesación para
+                            simular un equipo completo.</p>
                     </div>
-                    <div class="agent-chip">
-                        <div class="emoji">&#128187;</div>
-                        <div class="name agent-implementer">implementer</div>
-                        <div class="role">Escribe código<br>siguiendo el diseño</div>
-                    </div>
-                    <div class="agent-chip">
-                        <div class="emoji">&#129514;</div>
-                        <div class="name agent-tester">tester</div>
-                        <div class="role">Crea tests<br>automatizados</div>
-                    </div>
-                    <div class="agent-chip">
-                        <div class="emoji">&#9989;</div>
-                        <div class="name agent-qa">qa</div>
-                        <div class="role">Valida calidad<br>y criterios</div>
-                    </div>
-                    <div class="agent-chip">
-                        <div class="emoji">&#128230;</div>
-                        <div class="name agent-delivery">delivery</div>
-                        <div class="role">Versiona, documenta<br>y abre PR</div>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div class="agent-chip"
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
+                            <div class="emoji" style="font-size: 1.8em; margin: 0;">📐</div>
+                            <div style="flex: 1;">
+                                <div class="name" style="color: var(--agent-architect); font-size: 0.9em; margin: 0;">
+                                    architect</div>
+                                <div class="role" style="font-size: 0.6em;">Diseña soluciones y evalúa riesgos de
+                                    seguridad</div>
+                            </div>
+                        </div>
+
+                        <div class="agent-chip"
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
+                            <div class="emoji" style="font-size: 1.8em; margin: 0;">💻</div>
+                            <div style="flex: 1;">
+                                <div class="name" style="color: var(--agent-implementer); font-size: 0.9em; margin: 0;">
+                                    implementer</div>
+                                <div class="role" style="font-size: 0.6em;">Escribe código limpio siguiendo patrones
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="agent-chip"
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
+                            <div class="emoji" style="font-size: 1.8em; margin: 0;">🧪</div>
+                            <div style="flex: 1;">
+                                <div class="name" style="color: var(--agent-tester); font-size: 0.9em; margin: 0;">
+                                    tester</div>
+                                <div class="role" style="font-size: 0.6em;">Crea tests unitarios y de integración</div>
+                            </div>
+                        </div>
+
+                        <div class="agent-chip"
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
+                            <div class="emoji" style="font-size: 1.8em; margin: 0;">✅</div>
+                            <div style="flex: 1;">
+                                <div class="name" style="color: var(--agent-qa); font-size: 0.9em; margin: 0;">qa</div>
+                                <div class="role" style="font-size: 0.6em;">Valida calidad y cumplimiento de criterios
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="agent-chip"
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
+                            <div class="emoji" style="font-size: 1.8em; margin: 0;">📦</div>
+                            <div style="flex: 1;">
+                                <div class="name" style="color: var(--agent-delivery); font-size: 0.9em; margin: 0;">
+                                    delivery</div>
+                                <div class="role" style="font-size: 0.6em;">Gestiona versiones, docs y Pull Requests
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -204,116 +413,192 @@
             <!-- 4. BEFORE VS AFTER -->
             <section>
                 <h2>Antes vs Después</h2>
-                <table class="compare-table">
-                    <tr>
-                        <th></th>
-                        <th>Hoy</th>
-                        <th>Con agentes</th>
-                    </tr>
-                    <tr>
-                        <td>Diseño</td>
-                        <td class="cross">Se salta o es informal</td>
-                        <td class="check">Arquitecto IA revisa antes de codear</td>
-                    </tr>
-                    <tr>
-                        <td>Tests</td>
-                        <td class="cross">Si al dev le da tiempo</td>
-                        <td class="check">Automatizados, 80% coverage</td>
-                    </tr>
-                    <tr>
-                        <td>QA</td>
-                        <td class="cross">No existe</td>
-                        <td class="check">Criterios Given-When-Then validados</td>
-                    </tr>
-                    <tr>
-                        <td>Docs</td>
-                        <td class="cross">Se olvidan</td>
-                        <td class="check">Generadas automáticamente</td>
-                    </tr>
-                    <tr>
-                        <td>Delivery</td>
-                        <td class="cross">Sin versioning ni changelog</td>
-                        <td class="check">Branch + versión + PR estandarizado</td>
-                    </tr>
-                </table>
+                <div class="glass-table-container">
+                    <table class="compare-table">
+                        <tr>
+                            <th>Area</th>
+                            <th>Hoy</th>
+                            <th>Con agentes</th>
+                        </tr>
+                        <tr>
+                            <td>Diseño</td>
+                            <td class="cross"><i class="fa-solid fa-xmark"></i> Informal / Saltado</td>
+                            <td class="check"><i class="fa-solid fa-check"></i> Architect revisa antes de codear</td>
+                        </tr>
+                        <tr>
+                            <td>Tests</td>
+                            <td class="cross"><i class="fa-solid fa-xmark"></i> Si hay tiempo</td>
+                            <td class="check"><i class="fa-solid fa-check"></i> Automatizados, 80% coverage</td>
+                        </tr>
+                        <tr>
+                            <td>QA</td>
+                            <td class="cross"><i class="fa-solid fa-xmark"></i> No existe</td>
+                            <td class="check"><i class="fa-solid fa-check"></i> Criterios Gherkin validados</td>
+                        </tr>
+                        <tr>
+                            <td>Docs</td>
+                            <td class="cross"><i class="fa-solid fa-xmark"></i> Olvidadas</td>
+                            <td class="check"><i class="fa-solid fa-check"></i> Generación automática</td>
+                        </tr>
+                        <tr>
+                            <td>Delivery</td>
+                            <td class="cross"><i class="fa-solid fa-xmark"></i> Sin versioning</td>
+                            <td class="check"><i class="fa-solid fa-check"></i> Branch + SemVer + PR standard</td>
+                        </tr>
+                    </table>
+                </div>
             </section>
 
             <!-- 5. HOW IT WORKS -->
             <section>
-                <h2>Cómo se usa</h2>
-                <h3>El dev invoca al agente que necesita</h3>
-                <div style="margin-top: 20px;">
-                    <div class="flow-step" style="border-color: #d2a8ff;">
-                        <strong class="agent-architect">architect</strong> &mdash; "Diseña la solución para este feature"
+                <div>
+                    <h2>Workflow</h2>
+                    <h3>El dev invoca al agente que necesita</h3>
+                </div>
+                <div style="margin-top: 30px;">
+                    <div class="flow-step" style="border-color: var(--agent-architect);">
+                        <strong style="color: var(--agent-architect);">architect</strong>
+                        <span>"Diseña la solución para este feature..."</span>
                     </div>
-                    <div class="flow-step" style="border-color: #7ee787;">
-                        <strong class="agent-implementer">implementer</strong> &mdash; "Implementa según el diseño"
+                    <div class="flow-step" style="border-color: var(--agent-implementer);">
+                        <strong style="color: var(--agent-implementer);">implementer</strong>
+                        <span>"Implementa según el diseño..."</span>
                     </div>
-                    <div class="flow-step" style="border-color: #ff7b72;">
-                        <strong class="agent-tester">tester</strong> &mdash; "Crea tests para lo implementado"
+                    <div class="flow-step" style="border-color: var(--agent-tester);">
+                        <strong style="color: var(--agent-tester);">tester</strong>
+                        <span>"Crea tests para lo implementado..."</span>
                     </div>
-                    <div class="flow-step" style="border-color: #79c0ff;">
-                        <strong class="agent-qa">qa</strong> &mdash; "Valida que todo cumple los criterios"
+                    <div class="flow-step" style="border-color: var(--agent-qa);">
+                        <strong style="color: var(--agent-qa);">qa</strong>
+                        <span>"Valida que cumple los criterios..."</span>
                     </div>
-                    <div class="flow-step" style="border-color: #ffa657;">
-                        <strong class="agent-delivery">delivery</strong> &mdash; "Empaqueta y abre PR"
+                    <div class="flow-step" style="border-color: var(--agent-delivery);">
+                        <strong style="color: var(--agent-delivery);">delivery</strong>
+                        <span>"Empaqueta, versiona y abre PR..."</span>
                     </div>
                 </div>
-                <p style="font-size: 0.6em; color: #8b949e; margin-top: 14px;">
-                    Cada agente documenta su trabajo en <code>session-docs/</code> &mdash; trazabilidad total
-                </p>
+                <div style="margin-top: 15px; opacity: 0.7; font-size: 0.5em; color: var(--text-muted);">
+                    <i class="fa-solid fa-folder-open"></i> Trazabilidad total automática en folder
+                    <code>session-docs/</code>
+                </div>
             </section>
 
-            <!-- 6. ADOPTION -->
+            <!-- 6. CONTEXT BETWEEN AGENTS -->
             <section>
-                <h2>Plan de adopción</h2>
-                <div class="roadmap">
-                    <div class="roadmap-card">
-                        <div class="step agent-init">1</div>
-                        <h4>Setup</h4>
-                        <p><strong>init</strong> configura cada proyecto automáticamente</p>
+                <h2>Contexto Multi-Agente</h2>
+                <h3>Cada agente tiene su propia ventana de contexto</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; margin-top: 15px;">
+                    <div style="text-align: left;">
+                        <div class="glass-card" style="padding: 20px; margin-bottom: 15px;">
+                            <h4 style="color: var(--accent-danger); font-size: 0.8em; margin-bottom: 10px;">
+                                <i class="fa-solid fa-window-maximize"></i> Contexto aislado
+                            </h4>
+                            <p style="font-size: 0.6em; line-height: 1.6; color: var(--text-main); margin: 0;">
+                                Cada agente inicia con su <strong>propia ventana de contexto</strong> — no comparte memoria con los demás. Al terminar, su contexto se descarta.
+                            </p>
+                        </div>
+                        <div class="glass-card" style="padding: 20px;">
+                            <h4 style="color: var(--accent-success); font-size: 0.8em; margin-bottom: 10px;">
+                                <i class="fa-solid fa-file-lines"></i> Persistencia en archivos
+                            </h4>
+                            <p style="font-size: 0.6em; line-height: 1.6; color: var(--text-main); margin: 0;">
+                                Antes de terminar, cada agente <strong>documenta sus resultados</strong> en un <code>.md</code>. El siguiente agente lo lee al iniciar y recupera el contexto.
+                            </p>
+                        </div>
                     </div>
-                    <div class="roadmap-card">
-                        <div class="step agent-tester">2</div>
-                        <h4>Agentes individuales</h4>
-                        <p>Cada dev usa los agentes manualmente según necesite</p>
-                    </div>
-                    <div class="roadmap-card">
-                        <div class="step agent-orchestrator">3</div>
-                        <h4>Orquestación</h4>
-                        <p><strong>orchestrator</strong> coordina todo el pipeline con un solo comando</p>
+                    <div>
+                        <div style="display: grid; grid-template-columns: 190px 30px 1fr; row-gap: 5px; column-gap: 15px; align-items: center; text-align: left;">
+                            <strong style="color: var(--agent-architect); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-architect); border-radius: 0 8px 8px 0;">architect</strong>
+                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.6em;">01-architecture.md</code>
+
+                            <strong style="color: var(--agent-implementer); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-implementer); border-radius: 0 8px 8px 0;">implementer</strong>
+                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.6em;">02-implementation.md</code>
+
+                            <strong style="color: var(--agent-tester); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-tester); border-radius: 0 8px 8px 0;">tester</strong>
+                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.6em;">03-testing.md</code>
+
+                            <strong style="color: var(--agent-qa); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-qa); border-radius: 0 8px 8px 0;">qa</strong>
+                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.6em;">04-validation.md</code>
+
+                            <strong style="color: var(--agent-delivery); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-delivery); border-radius: 0 8px 8px 0;">delivery</strong>
+                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.6em;">05-delivery.md</code>
+                        </div>
+                        <div style="margin-top: 10px; text-align: center; font-size: 0.5em; color: var(--text-muted);">
+                            <i class="fa-solid fa-folder-open"></i> Todo queda en <code>session-docs/{feature}/</code>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 7. CLOSING -->
-            <section data-background-gradient="radial-gradient(circle at 50% 50%, #1a2535 0%, #0d1117 70%)">
-                <h1 style="font-size: 1.8em;">Menos bugs<br>Más velocidad<br><span style="color: #7ee787;">Mismos devs</span></h1>
-                <p style="font-size: 0.75em; color: #8b949e; margin-top: 28px;">
-                    Arquitecto &bull; Tester &bull; QA &bull; Release Manager<br>
-                    Roles cubiertos por IA. Resultados reales.
-                </p>
-                <p style="font-size: 0.65em; color: #484f58; margin-top: 32px;">
-                    A continuación: demo práctica
-                </p>
+            <!-- 7. ADOPTION  -->
+            <section>
+                <h2>Plan de Adopción</h2>
+                <div class="card-container" style="align-items: stretch;">
+                    <div class="glass-card feature-card roadmap-card">
+                        <div class="roadmap-step" style="color: var(--agent-init);">1</div>
+                        <h4 style="margin-top: 25px;">Setup</h4>
+                        <p><strong>init</strong> configura cada proyecto automáticamente con las reglas base.</p>
+                    </div>
+                    <div class="glass-card feature-card roadmap-card">
+                        <div class="roadmap-step" style="color: var(--agent-tester);">2</div>
+                        <h4 style="margin-top: 25px;">Individual</h4>
+                        <p>Cada dev usa los agentes manualmente (CLI) según su necesidad inmediata.</p>
+                    </div>
+                    <div class="glass-card feature-card roadmap-card">
+                        <div class="roadmap-step" style="color: var(--agent-orchestrator);">3</div>
+                        <h4 style="margin-top: 25px;">Orquestación</h4>
+                        <p><strong>orchestrator</strong> coordina todo el pipeline complejo con un solo comando.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. CLOSING -->
+            <section data-background-gradient="radial-gradient(circle at 80% 80%, #1e1e2e 0%, #000000 100%)">
+                <div style="margin-top: 40px;">
+                    <h1 style="font-size: 2em; line-height: 1.2;">Menos bugs<br>Más velocidad</h1>
+                    <div
+                        style="margin: 30px auto; width: 100px; height: 4px; background: var(--accent-success); border-radius: 2px;">
+                    </div>
+                    <h2 style="font-size: 1.5em;"><span style="color: var(--accent-success);">Mismos devs</span></h2>
+
+                    <p class="text-sm" style="margin-top: 40px; opacity: 0.7;">
+                        Arquitecto • Tester • QA • Release Manager<br>
+                        Roles cubiertos por IA. Resultados reales.
+                    </p>
+
+                    <div class="fragment fade-up" style="margin-top: 30px; font-size: 0.8em; color: var(--text-muted);">
+                        <i class="fa-solid fa-arrow-right"></i> A continuación: Demo Práctica
+                    </div>
+                </div>
             </section>
 
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script src="js/background-animation.js"></script>
     <script>
         Reveal.initialize({
             hash: true,
-            transition: 'slide',
+            transition: 'convex',
             transitionSpeed: 'default',
             backgroundTransition: 'fade',
+            controls: true,
+            progress: true,
             center: true,
-            width: 1100,
-            height: 700,
+            mouseWheel: true,
+            slideNumber: true,
+            width: 1200,
+            height: 750,
             margin: 0.04,
-            plugins: []
+            display: 'block'
         });
     </script>
 </body>
+
 </html>

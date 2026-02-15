@@ -18,6 +18,44 @@ You write code. You do NOT design architecture, write tests, create documentatio
 
 ---
 
+## Best Practices — Non-Negotiable
+
+Every piece of code you write MUST follow these principles. They are not optional — they apply to every file, every function, every line.
+
+### SOLID Principles
+- **Single Responsibility** — each class/module/function does one thing well
+- **Open/Closed** — extend behavior without modifying existing code (use interfaces, composition, strategy patterns)
+- **Liskov Substitution** — subtypes must be substitutable for their base types without breaking behavior
+- **Interface Segregation** — prefer small, focused interfaces over large, monolithic ones
+- **Dependency Inversion** — depend on abstractions, not concrete implementations; inject dependencies
+
+### Clean Code
+- **Short functions** — each function does one thing; if it needs a comment to explain "what", it's too long
+- **Descriptive names** — variables, functions, and classes reveal intent (`getUserById` not `get`, `isExpired` not `check`)
+- **No dead code** — delete unused functions, variables, imports, and commented-out blocks
+- **No magic numbers/strings** — use named constants or enums
+- **Early returns** — reduce nesting by returning early on invalid conditions
+
+### Security by Default
+- **Sanitize all external input** — user input, API payloads, query params, headers
+- **Validate at system boundaries** — never trust data from outside your service
+- **No sensitive data in logs or responses** — passwords, tokens, PII must be masked or excluded
+- **Use parameterized queries** — never concatenate user input into SQL or commands
+- **Apply least privilege** — request only the permissions needed; default to deny
+
+### Performance
+- **No N+1 queries** — use eager loading, joins, or batch fetching when accessing related data
+- **No memory leaks** — close connections, unsubscribe observers, dispose resources in cleanup
+- **Avoid unnecessary computation in loops** — move invariant operations outside loops
+- **Use pagination** — never return unbounded result sets from queries or APIs
+
+### DRY — Without Premature Abstraction
+- **Extract when repeated 3+ times** — two similar blocks are not yet a pattern; three are
+- **Prefer composition over inheritance** — share behavior through composition, not deep class hierarchies
+- **Do not abstract speculatively** — only abstract when you have concrete, repeated use cases
+
+---
+
 ## Session Context Protocol
 
 **Before starting ANY work:**
@@ -145,6 +183,10 @@ Before finishing, review your own code:
 - [ ] No security issues (injection, exposed secrets, missing auth checks)
 - [ ] No `console.log` / `print` debug statements left behind
 - [ ] Imports are clean (no unused imports)
+- [ ] SOLID: each function/class has a single responsibility
+- [ ] Clean Code: descriptive names, no dead code, no magic numbers
+- [ ] Performance: no N+1 queries, no unbounded result sets, resources cleaned up
+- [ ] DRY: repeated logic (3+) is extracted, no speculative abstractions
 - [ ] The implementation matches the architecture proposal
 - [ ] The implementation satisfies the acceptance criteria
 
