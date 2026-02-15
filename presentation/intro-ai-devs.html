@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intro: IA para Developers</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+    <style>
+        :root {
+            --r-background-color: #0d1117;
+            --r-main-color: #c9d1d9;
+            --r-heading-color: #f0f6fc;
+            --r-link-color: #58a6ff;
+        }
+        .reveal { font-family: 'Segoe UI', system-ui, sans-serif; }
+        .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; text-transform: none; }
+        .reveal h1 { font-size: 2.2em; }
+        .reveal h2 { font-size: 1.6em; margin-bottom: 12px; }
+        .reveal h3 { font-size: 1.05em; color: #8b949e; }
+
+        /* Cards */
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+        }
+        .card .icon { font-size: 1.8em; margin-bottom: 6px; }
+        .card h4 { margin: 0 0 6px 0; font-size: 0.85em; color: #f0f6fc; }
+        .card p { margin: 0; font-size: 0.55em; color: #8b949e; line-height: 1.4; }
+
+        /* Concepts grid */
+        .concepts {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 28px;
+        }
+        .concept-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            width: 380px;
+            text-align: left;
+        }
+        .concept-card h4 { margin: 0 0 8px 0; font-size: 0.9em; color: #58a6ff; }
+        .concept-card p { margin: 0; font-size: 0.6em; color: #c9d1d9; line-height: 1.5; }
+        .concept-card .example {
+            margin-top: 10px;
+            background: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85em;
+            color: #7ee787;
+        }
+
+        /* Context visual */
+        .context-visual {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px 32px;
+            max-width: 700px;
+            margin: 24px auto 0;
+            text-align: left;
+        }
+        .context-bar {
+            height: 32px;
+            border-radius: 8px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+        .context-bar .segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.55em;
+            font-weight: 600;
+        }
+        .context-label {
+            font-size: 0.6em;
+            color: #8b949e;
+            margin-top: 12px;
+        }
+
+        /* Tools grid */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            max-width: 900px;
+            margin: 24px auto 0;
+        }
+        .tool-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .tool-card .name { font-size: 0.8em; font-weight: 700; color: #f0f6fc; }
+        .tool-card .company { font-size: 0.55em; color: #8b949e; margin-top: 2px; }
+        .tool-card .desc { font-size: 0.52em; color: #8b949e; margin-top: 8px; line-height: 1.4; flex: 1; }
+        .tool-card .tag {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.48em;
+            font-weight: 600;
+        }
+
+        /* Tips */
+        .tips {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 28px;
+        }
+        .tip-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 18px;
+            width: 380px;
+            text-align: left;
+        }
+        .tip-card h4 { margin: 0 0 8px 0; font-size: 0.8em; }
+        .tip-card .bad { color: #f85149; font-size: 0.6em; margin: 4px 0; font-family: 'Consolas', monospace; }
+        .tip-card .good { color: #3fb950; font-size: 0.6em; margin: 4px 0; font-family: 'Consolas', monospace; }
+        .tip-card .label { font-size: 0.55em; color: #8b949e; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- 1. TITLE -->
+            <section data-background-gradient="radial-gradient(circle at 20% 50%, #1a1f35 0%, #0d1117 70%)">
+                <h1>IA para<br><span style="color: #58a6ff;">Developers</span></h1>
+                <h3 style="margin-top: 24px;">Conceptos clave y herramientas disponibles</h3>
+            </section>
+
+            <!-- 2. WHAT IS AN LLM -->
+            <section>
+                <h2>Qué es un LLM</h2>
+                <h3>Large Language Model</h3>
+                <div class="concepts">
+                    <div class="concept-card">
+                        <h4>Qué hace</h4>
+                        <p>Predice la siguiente palabra más probable basándose en todo el texto anterior. Entrenado con millones de documentos: código, docs, libros, artículos.</p>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Qué NO hace</h4>
+                        <p>No ejecuta código. No tiene memoria entre conversaciones. No "piensa" — genera texto estadísticamente coherente. Puede equivocarse con confianza.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. PROMPT & CONTEXT -->
+            <section>
+                <h2>Prompt y Contexto</h2>
+                <h3>Los dos conceptos más importantes</h3>
+                <div class="concepts">
+                    <div class="concept-card">
+                        <h4>Prompt</h4>
+                        <p>La instrucción que le das al modelo. Mientras más claro y específico, mejor resultado.</p>
+                        <div class="example">"Crea un endpoint POST /users que valide email y retorne 201"</div>
+                    </div>
+                    <div class="concept-card">
+                        <h4>Contexto</h4>
+                        <p>Todo lo que el modelo "ve" al momento de responder: tu prompt + archivos + conversación previa. Tiene un límite (ventana de contexto).</p>
+                        <div class="example">Prompt + código + historial = contexto total</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CONTEXT WINDOW -->
+            <section>
+                <h2>Ventana de contexto</h2>
+                <h3>El modelo solo ve lo que cabe en su ventana</h3>
+                <div class="context-visual">
+                    <div class="context-bar">
+                        <div class="segment" style="width: 20%; background: #1f6feb; color: #fff; border-radius: 8px 0 0 8px;">Instrucciones</div>
+                        <div class="segment" style="width: 35%; background: #238636; color: #fff;">Código / archivos</div>
+                        <div class="segment" style="width: 25%; background: #8b5cf6; color: #fff;">Conversación</div>
+                        <div class="segment" style="width: 20%; background: #21262d; color: #8b949e; border-radius: 0 8px 8px 0;">Respuesta</div>
+                    </div>
+                    <p class="context-label">
+                        <strong style="color: #f0f6fc;">Más contexto relevante = mejor respuesta.</strong><br>
+                        Si la ventana se llena, el modelo pierde información del inicio de la conversación.
+                    </p>
+                    <p class="context-label" style="margin-top: 14px;">
+                        Por eso es importante: prompts claros, dar solo el contexto necesario, y no hacer conversaciones infinitas.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 5. GOOD VS BAD PROMPTS -->
+            <section>
+                <h2>Prompts efectivos</h2>
+                <h3>La calidad del prompt define la calidad del resultado</h3>
+                <div class="tips">
+                    <div class="tip-card">
+                        <h4 style="color: #f85149;">Prompt vago</h4>
+                        <div class="bad">"Arregla el bug"</div>
+                        <div class="bad">"Haz que funcione"</div>
+                        <div class="bad">"Mejora este código"</div>
+                        <p class="label">Sin contexto, el modelo adivina. Resultado impredecible.</p>
+                    </div>
+                    <div class="tip-card">
+                        <h4 style="color: #3fb950;">Prompt específico</h4>
+                        <div class="good">"El endpoint /users retorna 500 cuando el email tiene acentos. Corrige la validación en user.service.ts"</div>
+                        <p class="label">Con contexto claro: qué falla, dónde, y qué esperas. Resultado preciso.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. AI TOOLS FOR DEVS -->
+            <section>
+                <h2>Herramientas de IA para desarrollo</h2>
+                <div class="tools-grid">
+                    <div class="tool-card">
+                        <div class="name">GitHub Copilot</div>
+                        <div class="company">Microsoft / GitHub</div>
+                        <div class="desc">Autocompletado inteligente dentro del editor. Sugiere código mientras escribes.</div>
+                        <div class="tag" style="background: #238636; color: #fff;">Autocompletado</div>
+                    </div>
+                    <div class="tool-card">
+                        <div class="name">Claude Code</div>
+                        <div class="company">Anthropic</div>
+                        <div class="desc">Agente en terminal que lee, edita y ejecuta código. Trabaja con el codebase completo.</div>
+                        <div class="tag" style="background: #1f6feb; color: #fff;">Agente CLI</div>
+                    </div>
+                    <div class="tool-card">
+                        <div class="name">Cursor</div>
+                        <div class="company">Cursor Inc.</div>
+                        <div class="desc">Editor basado en VS Code con IA integrada. Chat + edición + autocompletado.</div>
+                        <div class="tag" style="background: #8b5cf6; color: #fff;">Editor IA</div>
+                    </div>
+                    <div class="tool-card">
+                        <div class="name">Codex CLI</div>
+                        <div class="company">OpenAI</div>
+                        <div class="desc">Agente en terminal de OpenAI. Lee archivos, ejecuta comandos, genera código.</div>
+                        <div class="tag" style="background: #1f6feb; color: #fff;">Agente CLI</div>
+                    </div>
+                    <div class="tool-card">
+                        <div class="name">Windsurf</div>
+                        <div class="company">Codeium</div>
+                        <div class="desc">Editor con IA que entiende el flujo completo del proyecto. Agente integrado.</div>
+                        <div class="tag" style="background: #8b5cf6; color: #fff;">Editor IA</div>
+                    </div>
+                    <div class="tool-card">
+                        <div class="name">Antigravity</div>
+                        <div class="company">Google</div>
+                        <div class="desc">IDE agent-first de Google con Gemini 3. Vista de editor + vista de manager para orquestar agentes en paralelo.</div>
+                        <div class="tag" style="background: #8b5cf6; color: #fff;">Editor IA</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. WHAT WE USE -->
+            <section>
+                <h2>Nuestra herramienta</h2>
+                <h3>Claude Code</h3>
+                <div class="concepts" style="margin-top: 24px;">
+                    <div class="concept-card" style="width: 260px; text-align: center;">
+                        <h4>Lee el codebase</h4>
+                        <p>Entiende la estructura, convenciones y patrones del proyecto</p>
+                    </div>
+                    <div class="concept-card" style="width: 260px; text-align: center;">
+                        <h4>Edita archivos</h4>
+                        <p>Crea y modifica código directamente en el proyecto</p>
+                    </div>
+                    <div class="concept-card" style="width: 260px; text-align: center;">
+                        <h4>Ejecuta comandos</h4>
+                        <p>Corre tests, lint, build y cualquier comando del proyecto</p>
+                    </div>
+                </div>
+                <p style="font-size: 0.7em; color: #8b949e; margin-top: 24px;">
+                    Y lo más importante: soporta <strong style="color: #58a6ff;">agentes personalizados</strong><br>
+                    que siguen instrucciones específicas de nuestro equipo.
+                </p>
+            </section>
+
+            <!-- 8. CLOSING -->
+            <section data-background-gradient="radial-gradient(circle at 50% 50%, #1a2535 0%, #0d1117 70%)">
+                <h1 style="font-size: 1.8em;">La IA no reemplaza<br>al developer</h1>
+                <p style="font-size: 0.85em; color: #c9d1d9; margin-top: 28px;">
+                    Lo <span style="color: #7ee787; font-weight: 700;">potencia</span>
+                </p>
+                <p style="font-size: 0.65em; color: #484f58; margin-top: 32px;">
+                    Siguiente: cómo aplicamos esto en nuestro equipo
+                </p>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide',
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
+            center: true,
+            width: 1100,
+            height: 750,
+            margin: 0.04,
+            plugins: []
+        });
+    </script>
+</body>
+</html>
