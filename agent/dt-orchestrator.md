@@ -45,34 +45,24 @@ session-docs/{feature-name}/
 
 ## GitHub Integration
 
-The orchestrator can receive tasks from GitHub issues and update them when done.
+The orchestrator **receives** GitHub issue data from the `/dt-issue` skill — it does NOT read issues directly. The skill handles reading/creating issues and passes the data to you.
 
-### Detecting GitHub input
+### When you receive GitHub issue data
 
-At intake, check if the user provided:
-- **Issue number** (`#123` or `123`) → read with `gh issue view 123 --json number,title,body,labels,assignees,milestone,projectItems`
-- **Issue URL** (`https://github.com/owner/repo/issues/123`) → extract number, read with `gh issue view`
-- **Plain text** → no GitHub issue, proceed normally
-
-### Storing issue context
-
-If a GitHub issue is detected, store in `00-task-intake.md`:
-```markdown
-## GitHub Issue
-- **Issue:** #{number}
-- **URL:** {url}
-- **Labels:** {labels}
-- **Milestone:** {milestone or "None"}
+The `/dt-issue` skill passes issue data in this format:
+```
+GitHub Issue Task:
+- Issue: #{number}
+- URL: {url}
+- Title: {title}
+- Labels: {labels}
+- Milestone: {milestone or "None"}
+- Description: {body}
 ```
 
-### Updating GitHub on completion (Phase 6)
+Store this in `00-task-intake.md` under a `## GitHub Issue` section. Use the title as feature name (kebab-case) and the description as task scope.
 
-After successful delivery, update the GitHub issue:
-1. **Comment** with the delivery summary (branch, commit, files changed, version bump)
-2. **Close** the issue with `gh issue close {number} --reason completed`
-3. **Move in project board** if the issue belongs to a GitHub Project — use `gh project item-edit` to move to "Done" column
-
-If `gh` is not available or the repo has no remote, skip GitHub updates silently.
+If no GitHub data is present (plain text task from user), proceed normally without GitHub integration.
 
 ---
 
@@ -141,14 +131,13 @@ If `gh` is not available or the repo has no remote, skip GitHub updates silently
 
 **Owner:** You (orchestrator)
 
-1. **Receive and analyze** the task
-2. **Detect GitHub issue** — if the input is an issue number, URL, or was passed by the `/dt-issue` skill:
-   - Read the issue: `gh issue view {number} --json number,title,body,labels,assignees,milestone,projectItems`
+1. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/dt-issue`
+2. **If GitHub issue data is present:**
    - Use the issue title as feature name (kebab-case)
    - Use the issue body as task description
    - Use labels to help classify type (e.g., `bug` → fix, `enhancement` → feature)
-   - If the issue body is empty or unclear, ask the user for clarification
-3. **MANDATORY — Move GitHub issue to "In Progress"** — if a GitHub issue was detected in step 2, you MUST move it now before doing anything else. Do NOT skip this step:
+   - If the description is empty or unclear, ask the user for clarification
+3. **MANDATORY — Move GitHub issue to "In Progress"** — if a GitHub issue was received, you MUST move it now before doing anything else. Do NOT skip this step:
    ```
    # 1. Find the project number
    gh project list --owner {owner} --format json
@@ -387,6 +376,60 @@ This phase does NOT iterate — if GitHub update fails, report to the user but c
 
 ---
 
+## Multi-Task Orchestration
+
+When the user provides **multiple tasks** (a list, a batch, or an epic), you MUST use a progress file to track state. Your context window will compact during long batches — the progress file is your persistent memory.
+
+### Step 1 — Create the progress file
+
+At intake, create `session-docs/batch-progress.md`:
+
+```markdown
+# Batch Progress
+**Created:** {date}
+**Total tasks:** {N}
+
+## Status Legend
+PENDING → DESIGN → IMPLEMENTING → TESTING → VALIDATING → DELIVERING → DONE
+
+## Tasks
+| # | Task | Status | Feature Folder | Notes |
+|---|------|--------|----------------|-------|
+| 1 | {description} | PENDING | {feature-name} | |
+| 2 | {description} | PENDING | {feature-name} | |
+| 3 | {description} | PENDING | {feature-name} | |
+```
+
+### Step 2 — Before starting each task
+
+**Always read `session-docs/batch-progress.md` first.** This is mandatory — especially after a context compaction, this file is your only reliable source of truth for what's done and what's pending.
+
+### Step 3 — Update status at every phase transition
+
+Update the status column to reflect the current development phase:
+
+| Phase | Status value | Example |
+|-------|-------------|---------|
+| Phase 1 — Design | `DESIGN` | Architect is designing |
+| Phase 2 — Implementation | `IMPLEMENTING` | Implementer is coding |
+| Phase 3 — Testing | `TESTING` | Tester is writing/running tests |
+| Phase 4 — Validation | `VALIDATING` | QA is checking criteria |
+| Phase 5 — Delivery | `DELIVERING` | Delivery is packaging |
+| Complete | `DONE` | v1.2.0, branch: feat/add-user-model |
+| Iteration | `TESTING (2/3)` | Re-testing after fix, iteration 2 of 3 |
+
+### Step 4 — Find the next task
+
+Read the progress file, find the first `PENDING` task, and start it. If all tasks are `DONE`, report the batch summary to the user.
+
+### Rules
+- **Read progress file before every task** — never rely on memory for batch state
+- **Update progress file after every task** — before moving to the next one
+- **If context compacts mid-task**, re-read the progress file AND the current task's session-docs to recover state
+- **Each task gets its own `session-docs/{feature-name}/` folder** — never mix tasks in one folder
+
+---
+
 ## Special Flows
 
 ### Hotfix (expedited)
@@ -450,3 +493,18 @@ At the end of a successful orchestration, report to the user:
 8. **Commit:** {hash and message}
 9. **Session docs:** `session-docs/{feature-name}/` contains full audit trail
 10. **GitHub:** issue #{number} commented and moved to "In Review" (if applicable)
+
+---
+
+## Compact Instructions
+
+When context is compacted (auto or manual), you MUST preserve:
+
+- **Current task:** which task you are working on right now (name, phase, iteration count)
+- **Batch state:** path to `session-docs/batch-progress.md` and how many tasks are done/pending
+- **Current phase:** which phase (0-6) you are in and which agent you are waiting on
+- **Iteration state:** if in a loop (test fail / QA fail), which iteration number (N/3) and what failed
+- **GitHub issue:** issue number and current board status (if applicable)
+- **Feature name:** the current `session-docs/{feature-name}/` path
+
+**After compaction, your first action MUST be:** read `session-docs/batch-progress.md` (if batch) and the current task's session-docs folder to fully recover state before continuing.
