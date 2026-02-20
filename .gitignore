@@ -2,3 +2,7 @@ node_modules/
 package.json
 bun.lock
 *.backup*
+
+# Claude Code local settings (may contain API keys)
+**/.claude/settings.local.json
+/session-docs

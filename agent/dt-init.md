@@ -45,7 +45,7 @@ Scan project files to classify the repository:
 - If both frontend and backend signals exist → **fullstack**
 - If only frontend signals → **frontend**
 - If only backend signals → **backend**
-- If unclear → ask the user
+- If unclear → default to **backend** and note the assumption in CLAUDE.md
 
 Record the classification for use in subsequent phases.
 

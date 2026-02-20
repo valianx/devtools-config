@@ -53,7 +53,7 @@ Before writing any test:
 
 Identify what changed and build the test plan around those changes. **Tests MUST be ordered by the changes made — this is mandatory, not optional.**
 
-1. **Map the changes** — read session-docs, git diff, or ask the user what was modified. List every file, service, component, or endpoint that was added or changed.
+1. **Map the changes** — read session-docs and git diff to determine what was modified. List every file, service, component, or endpoint that was added or changed.
 2. **Order by dependency** — start from the lowest-level changes (utilities, repositories, factories) up to the highest (controllers, pages, orchestrators). **Write tests in this exact order.** Each test file corresponds to a changed file.
 3. **For each changed unit, define:**
    - Scenarios to test (happy path, error cases, edge cases)

@@ -47,18 +47,25 @@ Determine `{feature_name}` in this order:
 - Scan recent diffs and relevant files to understand the feature scope
 - Use context7 MCP if available to research documentation best practices. If not available, proceed without.
 
-### Step 2 — Create feature branch
+### Step 2 — Detect GitHub issue
+
+Check `session-docs/{feature-name}/00-task-intake.md` for a `## GitHub Issue` section. If found, extract the **issue number**. You will use it to:
+- Include it in the branch name (Step 3)
+- Link the PR to the issue (Step 8)
+
+If no GitHub issue section exists, proceed without — this is not an error.
+
+### Step 3 — Create feature branch
 
 **Always create a dedicated branch for the delivery commit. The base branch is always `main`.**
 
 - If already on a feature/fix/hotfix branch, use it as-is
 - If on `main`, create and switch to a new branch:
-  ```
-  git checkout -b feature/{feature_name}
-  ```
+  - **With GitHub issue:** `git checkout -b feature/{issue-number}-{feature_name}`
+  - **Without GitHub issue:** `git checkout -b feature/{feature_name}`
 - Never commit directly to `main`
 
-### Step 3 — Create documentation
+### Step 4 — Create documentation
 
 Create `/docs/{feature_name}.md` using the appropriate template:
 
@@ -89,7 +96,7 @@ Create `/docs/{feature_name}.md` using the appropriate template:
 
 Content must be implementation-aligned — use actual paths, schemas, config keys from the code. No generic placeholders.
 
-### Step 4 — Update CHANGELOG.md
+### Step 5 — Update CHANGELOG.md
 
 - Read existing `CHANGELOG.md`. If it doesn't exist, create it with Keep a Changelog format.
 - Add entry under `## [Unreleased]` in the appropriate subsection:
@@ -100,7 +107,7 @@ Content must be implementation-aligned — use actual paths, schemas, config key
 - Format: `- {Short description} (see [docs/{feature_name}.md](docs/{feature_name}.md))`
 - Do NOT modify entries outside `[Unreleased]`
 
-### Step 5 — Update OpenAPI (backend only, if applicable)
+### Step 6 — Update OpenAPI (backend only, if applicable)
 
 If the feature adds or modifies HTTP endpoints:
 - Read existing `openapi/openapi.yaml`. If it doesn't exist, create `openapi/` directory and a new OpenAPI 3.0 spec.
@@ -108,7 +115,7 @@ If the feature adds or modifies HTTP endpoints:
 - Use DTOs from the codebase for accurate schemas.
 - **Skip** if the feature doesn't involve HTTP endpoints.
 
-### Step 6 — Bump project version
+### Step 7 — Bump project version
 
 **This step is MANDATORY. Never skip it.**
 
@@ -143,7 +150,7 @@ Read the first match and extract the current version.
 - **Minor** (0.X.0) — new features, non-breaking changes
 - **Major** (X.0.0) — only if the user explicitly requests it (breaking changes)
 - Default to **minor** for new features, **patch** for fixes
-- If unsure, ask the user which version increment to apply
+- If unsure, default to **minor** for features and **patch** for fixes — do not ask
 
 **Step 6.3 — If NO version file is found**, create one automatically:
 - Detect the project ecosystem (Node → `package.json`, Python → `pyproject.toml`, Rust → `Cargo.toml`, etc.)
@@ -152,7 +159,7 @@ Read the first match and extract the current version.
 
 **Step 6.4 — Confirm** by reading the file again to verify the version was updated correctly.
 
-### Step 7 — Commit and push
+### Step 8 — Commit and push
 
 **Stage delivery files (version file is MANDATORY):**
 ```
@@ -173,10 +180,31 @@ git add openapi/openapi.yaml  # only if updated
 
 Do NOT stage unrelated files.
 
-### Step 8 — Create Pull Request
+### Step 9 — Create Pull Request
 
-**Always create a PR targeting `main`.**
+**Always create a PR targeting `main`.** If a GitHub issue was detected in Step 2, link it using `Closes #{number}`.
 
+**With GitHub issue:**
+```
+gh pr create --base main --title "{type}({feature_name}): {short summary}" --body "$(cat <<'EOF'
+Closes #{number}
+
+## Summary
+- {bullet points of what was done}
+
+## Changes
+- {files changed}
+
+## Tests
+- {test results}
+
+## Version
+- {old} → {new}
+EOF
+)"
+```
+
+**Without GitHub issue:**
 ```
 gh pr create --base main --title "{type}({feature_name}): {short summary}" --body "$(cat <<'EOF'
 ## Summary
@@ -196,6 +224,7 @@ EOF
 
 - Base branch is always `main`
 - Title follows conventional commits format
+- `Closes #{number}` links the PR to the issue — GitHub will auto-close the issue when the PR is merged
 - If PR creation fails (e.g., no remote, no gh), report to the user
 
 ---

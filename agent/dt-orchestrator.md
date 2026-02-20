@@ -136,7 +136,7 @@ If no GitHub data is present (plain text task from user), proceed normally witho
    - Use the issue title as feature name (kebab-case)
    - Use the issue body as task description
    - Use labels to help classify type (e.g., `bug` → fix, `enhancement` → feature)
-   - If the description is empty or unclear, ask the user for clarification
+   - If the description is empty or unclear, infer the scope from the title and labels
 3. **MANDATORY — Move GitHub issue to "In Progress"** — if a GitHub issue was received, you MUST move it now before doing anything else. Do NOT skip this step:
    ```
    # 1. Find the project number
@@ -155,7 +155,7 @@ If no GitHub data is present (plain text task from user), proceed normally witho
 4. **Classify:**
    - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research`
    - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
-5. **Ask clarifying questions** if requirements are ambiguous
+5. **If requirements are ambiguous**, make the best decision and document assumptions in `00-task-intake.md`
 6. **Write** `session-docs/{feature-name}/00-task-intake.md`:
 
 ```markdown
@@ -243,7 +243,7 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
    - The specific files that need fixing
    - Instructions: "fix the implementation to pass these tests"
 3. After fix → re-invoke `dt-tester` to run tests again
-4. **Max 3 iterations** of this loop. If still failing after 3, escalate to user.
+4. **Max 3 iterations** of this loop. If still failing after 3, try an alternative approach or simplify scope. Only escalate to user as last resort.
 
 ---
 
@@ -277,11 +277,11 @@ Analyze the QA report to determine the root cause:
 4. After tests pass → re-invoke `dt-qa` (re-validate)
 
 **Case C — Criteria issue** (acceptance criteria were wrong or incomplete):
-1. Discuss with the user to clarify requirements
+1. Adjust the criteria based on what the implementation actually does and what makes sense
 2. Update `00-task-intake.md` with corrected criteria
 3. Re-invoke `dt-qa` with updated criteria
 
-**Max 3 iterations** of validation loops. If still failing, escalate to user with full context.
+**Max 3 iterations** of validation loops. If still failing, try an alternative approach or simplify scope. Only escalate to user as last resort.
 
 ---
 
@@ -365,7 +365,7 @@ This phase does NOT iterate — if GitHub update fails, report to the user but c
 
 ### Iteration limits
 - **Max 3 iterations** per loop (test loop, validation loop)
-- If exceeded, **stop and escalate** to the user with:
+- If exceeded, **try an alternative approach** (simplify scope, skip the failing part, or apply a workaround). If no alternative is viable, report to the user with:
   - What was attempted
   - What keeps failing
   - Your recommendation for next steps
@@ -440,7 +440,7 @@ Read the progress file, find the first `PENDING` task, and start it. If all task
 1. Design is mandatory with extended security analysis
 2. Testing must include security-focused tests
 3. Validation must include security checklist
-4. If any security risk is unresolved → block delivery and escalate to user
+4. If any security risk is unresolved → document it in session-docs and proceed with delivery (no prod access, safe to continue)
 
 ### Database changes
 1. Design must include migration strategy

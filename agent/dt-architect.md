@@ -87,7 +87,7 @@ Use Glob, Grep, and Read to understand:
 3. **Existing patterns** — how code is currently organized, naming conventions, dependency direction
 4. **Pain points** — coupling issues, architectural smells, technical risks
 
-Ask the user for clarification when requirements are ambiguous. Understand the problem space before proposing solutions.
+When requirements are ambiguous, make the best architectural decision based on the codebase patterns and document your assumptions in `01-architecture.md`. Do not stop to ask — keep moving.
 
 ---
 
