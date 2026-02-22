@@ -108,46 +108,14 @@ All mocks MUST be created via factory functions. **No inline mock definitions in
 
 #### Step 1 — Find or create the mocks directory
 
-**Before writing any test**, check if a centralized mocks/factories directory exists:
-
-```
-Use Glob to search for:
-  {test-directory}/factories/
-  {test-directory}/mocks/
-  __tests__/factories/
-  __tests__/mocks/
-  tests/factories/
-  tests/mocks/
-  test/factories/
-  test/mocks/
-```
+**Before writing any test**, use Glob to search for existing `mocks/` or `factories/` directories under the test directory (`__tests__/`, `tests/`, `test/`, etc.).
 
 - If found → use the existing directory and extend it
-- If NOT found → **create it immediately** in the project's test directory:
-  ```
-  {test-directory}/mocks/
-    index.ts          # re-exports all factories
-  ```
+- If NOT found → create `{test-directory}/mocks/` with an `index.ts` that re-exports all factories
 
 #### Step 2 — Create factories for every dependency
 
-For each external dependency mocked in the tests:
-- **One factory file per dependency type** — `{dependency}.mock.ts`
-- **Sensible defaults** — factories work with zero arguments for common cases
-- **Override support** — accept partial overrides for specific test scenarios
-- **Re-export via index** — add each new factory to the index file
-- **Mock minimalism** — only mock what's necessary to isolate the unit under test
-
-**Final directory structure:**
-```
-{test-directory}/
-  mocks/
-    index.ts                    # re-exports all factories
-    {dependency-a}.mock.ts      # one per external dependency
-    {dependency-b}.mock.ts
-  fixtures/
-    {entity}.fixture.ts         # test data (if needed)
-```
+For each external dependency: one factory file per dependency type (`{dependency}.mock.ts`), sensible defaults (zero-arg for common cases), override support (partial overrides), re-export via index, mock minimalism (only what's needed to isolate).
 
 #### Rules
 - **Never define mocks inline** in test files — always import from the mocks directory
@@ -185,25 +153,10 @@ Before running coverage, ensure the project has a proper coverage configuration 
 - Generated code (GraphQL codegen, Prisma client, etc.)
 - Static assets and style files
 
-**How to configure (adapt to detected framework):**
-
-For **Jest/Vitest** — add `coveragePathIgnorePatterns` or `collectCoverageFrom` in jest.config / vitest.config:
-```
-collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.config.*', '!src/**/index.ts', '!src/**/*.d.ts']
-coverageThreshold: { global: { branches: 80 } }
-```
-
-For **pytest** — add to `pyproject.toml` or `.coveragerc`:
-```
-[tool.coverage.run]
-omit = ["*/config/*", "*/migrations/*", "*/tests/*"]
-```
-
-For **Go** — coverage exclusions are handled via build tags or test flags.
+**Configuration:** Use context7 MCP to look up the correct coverage config syntax for the detected framework. Use the project's existing coverage config if present — extend it, never overwrite.
 
 **Rules:**
 - Read the existing coverage config first — do not overwrite custom exclusions
-- If a config exists, extend it with missing exclusions
 - If no config exists, create one and inform the user what was excluded and why
 - The goal is to measure coverage only on business logic, not boilerplate
 

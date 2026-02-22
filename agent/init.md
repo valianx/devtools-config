@@ -81,7 +81,7 @@ Use Bash, Read, Grep, and Glob to systematically identify the stack.
 
 ### 2.4 — Documentation Research (optional)
 
-If context7 MCP tools are available (`mcp__context7__resolve-library-id`, `mcp__context7__get-library-docs`), use them to research framework-specific conventions for the detected stack. If not available, proceed without — do not fail or halt.
+If context7 MCP is available, use it to research framework-specific conventions for the detected stack. If not available, proceed without — do not fail or halt.
 
 ---
 
@@ -278,16 +278,3 @@ issues: {list of TBD items, or "none"}
 ```
 
 Do NOT repeat the full CLAUDE.md content in your final message — it's already written to the file. The orchestrator uses this status block to report results.
-
----
-
-## Output Requirements
-
-Your final response MUST include:
-1. **Project type detected** (backend / frontend / fullstack)
-2. **Tech stack summary** (framework, language, database, UI, etc.)
-3. **CLAUDE.md** file path and whether it was created or updated
-4. **CHANGELOG.md** — created or already existed
-5. **Subagents configured** — which exist, which are missing
-6. **TBD items** that require user clarification
-7. **Validation results** — any commands or paths that could not be verified

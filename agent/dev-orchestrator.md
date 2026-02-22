@@ -114,64 +114,15 @@ If no GitHub data is present (plain text task from user), proceed normally witho
 
 ---
 
-## The Kanban: Iterative Development Flow
+## Pipeline Flow
 
 ```
-                    ┌──────────────────────────────────────────────┐
-                    │         PHASE 0a: INTAKE                      │
-                    │  Orchestrator classifies and scopes the task  │
-                    └──────────────┬───────────────────────────────┘
-                                   │
-                                   ▼
-                    ┌──────────────────────────────────────────────┐
-                    │         PHASE 0b: SPECIFY                     │
-                    │  Build spec: user stories, AC, codebase       │
-                    │  context. Resolve ambiguities with user.       │
-                    │  (skip for hotfix/simple)                      │
-                    └──────────────┬───────────────────────────────┘
-                                   │
-                                   ▼
-                    ┌──────────────────────────────────────────────┐
-                    │           PHASE 1: DESIGN                     │
-                    │  architect proposes solution                   │
-               ┌───►│  (skip for simple fixes)                      │◄──────┐
-               │    └──────────────┬───────────────────────────────┘       │
-               │                   │                                        │
-               │                   ▼                                        │
-               │    ┌──────────────────────────────────────────────┐       │
-               │    │           PHASE 2: IMPLEMENTATION             │       │
-  design fix   │    │  implementer writes code                     │       │ design
-  needed       │    │  (loops until build/lint passes)             │◄──┐   │ issue
-               │    └──────────────┬───────────────────────────────┘   │   │
-               │                   │                                    │   │
-               │                   ▼                                    │   │
-               │    ┌──────────────────────────────────────────────┐   │   │
-               │    │      PHASE 3: VERIFY (parallel)               │   │   │
-               │    │  ┌────────────┐   ┌───────────────────┐      │   │   │
-               │    │  │  tester    │   │  qa (validate)    │      │   │   │
-               │    │  │  runs tests│   │  checks criteria  │      │   │   │
-               │    │  └────────────┘   └───────────────────┘      │   │   │
-               │    └──────────────┬───────────────────────────────┘   │   │
-               │                   │                                    │   │
-               │                   │ any failure?                       │   │
-               │                   ├────── impl issue ─────────────────┘   │
-               │                   │       (implementer fixes, re-verify)  │
-               │                   │                                        │
-               │                   ├────── design issue ───────────────────┘
-               │                   │       (architect revises)
-               │                   │
-               │                   │ both pass
-               │                   ▼
-               │    ┌──────────────────────────────────────────────┐
-               │    │           PHASE 4: DELIVERY                   │
-               │    │  delivery delivers                            │
-               │    └──────────────┬───────────────────────────────┘
-               │                   │
-               │                   ▼
-               │              ✅ COMPLETE
-               │
-               └── (max 3 iterations per loop — escalate to user if exceeded)
+0a Intake → 0b Specify → 1 Design → 2 Implement → 3 Verify (tester+qa parallel) → 4 Delivery → 5 GitHub
+                                          ↑                    │
+                                          └── fail: iterate ───┘  (max 3 loops)
 ```
+
+Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1.
 
 ---
 
@@ -185,26 +136,16 @@ If no GitHub data is present (plain text task from user), proceed normally witho
    - Use the issue body as task description
    - Use labels to help classify type (e.g., `bug` → fix, `enhancement` → feature)
    - If the description is empty or unclear, infer the scope from the title and labels
-3. **MANDATORY — Move GitHub issue to "In Progress"** — if a GitHub issue was received, you MUST move it now before doing anything else. Do NOT skip this step:
-   ```
-   # 1. Find the project number
-   gh project list --owner {owner} --format json
-
-   # 2. Get the project field IDs (find the "Status" field)
-   gh project field-list {project-number} --owner {owner} --format json
-
-   # 3. Get the item ID for this issue
-   gh project item-list {project-number} --owner {owner} --format json
-
-   # 4. Move to "In Progress"
-   gh project item-edit --project-id {project-id} --id {item-id} --field-id {status-field-id} --single-select-option-id {in-progress-option-id}
-   ```
-   If any command fails, **report the error to the user** — do not skip silently. Show the error message so we can debug it. Continue with the rest of the intake after reporting.
+3. **MANDATORY — Move GitHub issue to "In Progress"** on the project board using `gh project list`, `gh project field-list`, `gh project item-list`, and `gh project item-edit`. If any command fails, report the error to the user and continue.
 4. **Classify:**
    - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research`
    - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
-5. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
-6. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
+5. **Bootstrap check** (development tasks only — skip for `research` and `plan`):
+   - Verify these prerequisites exist: `CLAUDE.md`, `CHANGELOG.md`, `.gitignore` with `/session-docs` entry
+   - If ANY is missing → invoke `init` agent via Task tool before continuing
+   - If all exist → proceed normally
+6. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
+7. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
 
 ---
 
@@ -244,104 +185,22 @@ If any `[NEEDS CLARIFICATION]` markers exist:
 
 ### Step 4 — Update GitHub issue (if applicable)
 
-If the task came from a GitHub issue AND `needs-specify` is `true` (or no flag was provided):
-```
-gh issue edit {number} --body "$(cat <<'EOF'
-## Description
-> {original description, quoted}
-
-### User Stories
-- As a {user}, I want {action}, so that {benefit}
-
-### Acceptance Criteria
-- [ ] **AC-1**: Given {context}, When {action}, Then {result}
-- [ ] **AC-2**: Given {context}, When {action}, Then {result}
-- [ ] **AC-3**: Given {context}, When {action}, Then {result}
-
-### Scope
-- **Included:** {list}
-- **Excluded:** {list}
-
-### Technical Context
-- {discovered context from codebase}
-
----
-*Spec generated by dev-team orchestrator*
-EOF
-)"
-```
-
-If `needs-specify: false`, do NOT overwrite the issue body — the issue already has structured AC.
+If `needs-specify: true` (or no flag), update the issue body via `gh issue edit` with: quoted original description, user stories, AC (Given/When/Then), scope, and technical context. If `needs-specify: false`, do NOT overwrite.
 
 ### Step 5 — Write `00-task-intake.md`
 
-Write `session-docs/{feature-name}/00-task-intake.md` with the enriched spec:
+Write `session-docs/{feature-name}/00-task-intake.md` with these sections:
+- **Header:** feature name, type, complexity, date
+- **GitHub Issue:** number and URL (if applicable)
+- **Original Description:** quoted
+- **User Stories:** As a [user], I want [action], so that [benefit]
+- **Acceptance Criteria:** Given/When/Then format, checkboxes
+- **Scope:** included/excluded
+- **Codebase Context:** files, patterns, dependencies discovered
+- **Clarifications Resolved:** questions → answers
+- **Phase Plan:** checklist of remaining phases
 
-```markdown
-# Task: {feature-name}
-**Type:** {type}
-**Complexity:** {complexity}
-**Date:** {date}
-
-## GitHub Issue (if applicable)
-- **Issue:** #{number}
-- **URL:** {url}
-
-## Original Description
-> {original description from issue or user input, quoted}
-
-## User Stories
-- As a {user/system}, I want {action}, so that {benefit}
-
-## Acceptance Criteria
-- [ ] **AC-1**: Given {context}, When {action}, Then {expected result}
-- [ ] **AC-2**: Given {context}, When {action}, Then {expected result}
-- [ ] **AC-3**: Given {context}, When {action}, Then {expected result}
-
-## Scope
-- **Included:** {what's in scope}
-- **Excluded:** {what's NOT in scope}
-
-## Codebase Context (auto-discovered)
-- {file/component}: {relevance}
-- {pattern}: {how it applies}
-
-## Clarifications Resolved
-- {question} → {answer from user}
-(or "None — requirements were clear")
-
-## Phase Plan
-- [x] Specify (orchestrator)
-- [ ] Design (architect)
-- [ ] Implementation (implementer)
-- [ ] Verify (tester + qa in parallel)
-- [ ] Delivery (delivery)
-```
-
-For **hotfix/simple** tasks that skip SPECIFY, write a minimal `00-task-intake.md` without the enriched sections:
-
-```markdown
-# Task: {feature-name}
-**Type:** {type}
-**Complexity:** {complexity}
-**Date:** {date}
-
-## GitHub Issue (if applicable)
-- **Issue:** #{number}
-- **URL:** {url}
-
-## Description
-{What needs to be done — from issue body or user input}
-
-## Scope
-- Included: {what's in scope}
-- Excluded: {what's NOT in scope}
-
-## Phase Plan
-- [ ] Implementation (implementer)
-- [ ] Verify (tester + qa in parallel)
-- [ ] Delivery (delivery)
-```
+For **hotfix/simple** tasks: write a minimal version with just header, description, scope, and phase plan.
 
 6. **Announce** to the user: spec complete, starting Phase 1 (or Phase 2 if simple).
 
@@ -472,54 +331,11 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
 
 **Owner:** You (orchestrator) — only runs if the task originated from a GitHub issue.
 
-1. **Comment on the issue** with a detailed summary. Read `session-docs/{feature-name}/04-validation.md` to extract the full list of acceptance criteria and their results.
-   ```
-   gh issue comment {number} --body "$(cat <<'EOF'
-   ## Ready for review — dev-team
+1. **Comment on the issue** via `gh issue comment` with: branch, commit, version, files changed, test results, **every AC individually with pass/fail status** (read `04-validation.md` for this — never summarize as "15/15 passed"), and QA notes/warnings.
 
-   **Branch:** {branch-name}
-   **Commit:** {hash}
-   **Version:** {old} → {new}
+2. **Move to "In Review"** on the project board using `gh project` commands (same pattern as Phase 0a). Target column is **"In Review"** — never "Done", never "Closed". If the board lacks "In Review", leave in "In Progress". Report errors to user.
 
-   ### Files changed
-   - {file list}
-
-   ### Tests
-   - {total} total | {passed} passed | {failed} failed
-
-   ### Acceptance Criteria ({passed}/{total})
-   - [x] {criterion 1 — description}
-   - [x] {criterion 2 — description}
-   - [x] {criterion 3 — description}
-   (list ALL criteria from the QA validation report with pass/fail status)
-
-   ### QA Notes
-   - {any warnings or recommendations from the QA report}
-   EOF
-   )"
-   ```
-
-   **Important:** Always list every acceptance criterion individually. Never summarize as "15/15 passed" without listing them. The reviewer needs to see exactly what was validated.
-
-2. **Move to "In Review"** in project board. This is mandatory — **never move to "Done"**. Follow these steps:
-   ```
-   # 1. Find the project number
-   gh project list --owner {owner} --format json
-
-   # 2. Get the project field IDs (find the "Status" field)
-   gh project field-list {project-number} --owner {owner} --format json
-
-   # 3. Get the item ID for this issue
-   gh project item-list {project-number} --owner {owner} --format json
-
-   # 4. Move to "In Review" (NOT "Done")
-   gh project item-edit --project-id {project-id} --id {item-id} --field-id {status-field-id} --single-select-option-id {in-review-option-id}
-   ```
-   - The target column is **"In Review"** — never "Done", never "Closed"
-   - If the board doesn't have an "In Review" column, leave it in "In Progress"
-   - If any command fails, **report the error to the user** — do not skip silently. Show the error message so we can debug it. Continue with delivery after reporting.
-
-3. **Do NOT close the issue.** Do NOT move to "Done". Leave it open in "In Review" for human review. Only the reviewer closes it after approval.
+3. **Do NOT close the issue.** Leave it open in "In Review" for human review.
 
 This phase does NOT iterate — if GitHub update fails, report to the user but consider the task complete.
 
@@ -545,55 +361,13 @@ This phase does NOT iterate — if GitHub update fails, report to the user but c
 
 ## Multi-Task Orchestration
 
-When the user provides **multiple tasks** (a list, a batch, or an epic), you MUST use a progress file to track state. Your context window will compact during long batches — the progress file is your persistent memory.
+When multiple tasks are received (batch from `/issue` or `/plan`), track state in `session-docs/batch-progress.md`:
 
-### Step 1 — Create the progress file
-
-At intake, create `session-docs/batch-progress.md`:
-
-```markdown
-# Batch Progress
-**Created:** {date}
-**Total tasks:** {N}
-
-## Status Legend
-PENDING → SPECIFYING → DESIGN → IMPLEMENTING → VERIFYING → DELIVERING → DONE
-
-## Tasks
-| # | Task | Status | Feature Folder | Notes |
-|---|------|--------|----------------|-------|
-| 1 | {description} | PENDING | {feature-name} | |
-| 2 | {description} | PENDING | {feature-name} | |
-| 3 | {description} | PENDING | {feature-name} | |
-```
-
-### Step 2 — Before starting each task
-
-**Always read `session-docs/batch-progress.md` first.** This is mandatory — especially after a context compaction, this file is your only reliable source of truth for what's done and what's pending.
-
-### Step 3 — Update status at every phase transition
-
-Update the status column to reflect the current development phase:
-
-| Phase | Status value | Example |
-|-------|-------------|---------|
-| Phase 0b — Specify | `SPECIFYING` | Orchestrator building spec |
-| Phase 1 — Design | `DESIGN` | Architect is designing |
-| Phase 2 — Implementation | `IMPLEMENTING` | Implementer is coding |
-| Phase 3 — Verify | `VERIFYING` | Tester + QA running in parallel |
-| Phase 4 — Delivery | `DELIVERING` | Delivery is packaging |
-| Complete | `DONE` | v1.2.0, branch: feat/add-user-model |
-| Iteration | `VERIFYING (2/3)` | Re-verifying after fix, iteration 2 of 3 |
-
-### Step 4 — Find the next task
-
-Read the progress file, find the first `PENDING` task, and start it. If all tasks are `DONE`, report the batch summary to the user.
-
-### Rules
-- **Read progress file before every task** — never rely on memory for batch state
-- **Update progress file after every task** — before moving to the next one
-- **If context compacts mid-task**, re-read the progress file AND the current task's session-docs to recover state
-- **Each task gets its own `session-docs/{feature-name}/` folder** — never mix tasks in one folder
+1. **Create progress file** with a table: `| # | Task | Status | Feature Folder | Notes |` — all start as `PENDING`
+2. **Status values:** `PENDING → SPECIFYING → DESIGN → IMPLEMENTING → VERIFYING → DELIVERING → DONE` (use `VERIFYING (N/3)` for iterations)
+3. **Before each task:** always read `batch-progress.md` first (mandatory after compaction)
+4. **After each phase:** update the status column
+5. **Each task** gets its own `session-docs/{feature-name}/` folder — never mix tasks
 
 ---
 
@@ -625,195 +399,21 @@ When the user asks to investigate, compare technologies, evaluate a migration, o
 
 ### Plan (analysis + task breakdown)
 
-Supports two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeline for each task).
+Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeline per task).
 
-When you receive `Mode: plan` or `Mode: plan-and-execute` (from the `/plan` skill) or detect the user is asking to "planificar", "analizar y crear tareas", "breakdown", or "plan tasks":
+**Planning phase (both modes):**
+1. **Intake** — classify as `plan` or `plan-and-execute`. Do NOT move GitHub issues to "In Progress" yet.
+2. **Specify** — full SPECIFY as normal (codebase investigation, AC, scope). Update GitHub issue if `needs-specify: true`.
+3. **Design (planning mode)** — invoke `architect` in planning mode. Architect produces task breakdown in `01-planning.md` (not an architecture proposal). Task sizing is the architect's responsibility.
+4. **Validate sizing** — read `01-planning.md`. If any task has >20 AC or looks like a full feature, re-invoke architect to split. Max 1 retry.
+5. **Create tasks** — check `gh auth status`:
+   - **gh available:** create one GitHub issue per task via `gh issue create` with description, AC, technical context, group, complexity. Use task label + group as labels. Comment on parent issue with breakdown list.
+   - **gh unavailable:** write each task as a markdown file in `session-docs/{feature-name}/tasks/` with an index file.
+6. **Report** created tasks to user.
 
-#### Planning Phase (both modes)
+**Mode: `plan`** → STOP after reporting.
 
-1. **Phase 0a — Intake**: classify as type `plan` or `plan-and-execute`, complexity `standard` or `complex`. Use the title as feature name (kebab-case). Do NOT move GitHub issues to "In Progress" during the planning phase.
-2. **Phase 0b — Specify**: full SPECIFY — investigate codebase, build spec funcional, resolve ambiguities with the user. Write `session-docs/{feature-name}/00-task-intake.md`. If the task came from a GitHub issue with `needs-specify: true`, update the issue body with the enriched spec (same as normal SPECIFY). If `needs-specify: false`, skip the issue update.
-3. **Phase 1 — Design (planning mode)**: invoke `architect` via Task tool with explicit instructions:
-   ```
-   This is a planning task. Analyze the problem and produce a task breakdown in
-   session-docs/{feature-name}/01-planning.md. Do NOT produce an architecture proposal.
-   Operating mode: planning.
-   Feature name: {feature-name}
-   Read 00-task-intake.md for full context.
-   ```
-4. **Phase VALIDATE — Review the breakdown**: read `session-docs/{feature-name}/01-planning.md` and validate task sizing:
-   - If any task has more than 20 AC or looks like a full feature (e.g., "implement login", "build user module"), **re-invoke the architect** with: "Task {N} is too large. Split it following the Task Sizing Rules. A task should be ~3HH equivalent, max 1 day."
-   - If the breakdown has more than 15 tasks, review whether some tasks are too granular and could be merged — but **never merge just to reduce count** if the tasks are genuinely independent.
-   - Max 1 re-invocation for sizing. If still oversized after retry, proceed and note it in the report.
-
-5. **Phase CREATE — Detect output target**: before creating tasks, check if GitHub CLI is available:
-   ```
-   gh auth status
-   ```
-   - If `gh` succeeds → **GitHub mode** (create issues)
-   - If `gh` fails or is not installed → **Local mode** (write task files)
-
-#### GitHub mode (gh available)
-
-Create one GitHub issue per task:
-   ```
-   gh issue create --title "{task title}" --label "{label},{group-label}" --assignee "@me" --body "$(cat <<'EOF'
-   ## Description
-   {task description from breakdown}
-
-   ## Acceptance Criteria
-   - [ ] **AC-1**: Given {context}, When {action}, Then {result}
-   - [ ] **AC-2**: Given {context}, When {action}, Then {result}
-
-   ## Technical Context
-   {files, patterns, architecture guidance from breakdown}
-
-   ## Group
-   {group name from breakdown — e.g., "Data Layer", "Auth Service"}
-
-   ## Parent
-   {link to parent issue if applicable}
-
-   ## Complexity
-   {simple/standard/complex}
-
-   ---
-   *Task created by dev-team planning flow*
-   EOF
-   )"
-   ```
-   Capture each created issue number and title.
-
-   **Labeling:** use the task's label (feature/fix/refactor/enhancement) plus the group name as a second label (kebab-case, e.g., `data-layer`, `auth-service`).
-
-   **Comment on parent issue (if applicable):**
-   ```
-   gh issue comment {number} --body "$(cat <<'EOF'
-   ## Planning Breakdown
-
-   Created {N} tasks from this issue:
-   - #{n1} — {title}
-   - #{n2} — {title}
-   - #{n3} — {title}
-
-   *Breakdown by dev-team planning flow*
-   EOF
-   )"
-   ```
-
-#### Local mode (gh NOT available)
-
-Write each task as a markdown file in `session-docs/{feature-name}/tasks/`:
-
-   ```
-   session-docs/{feature-name}/tasks/
-     00-index.md              ← summary with all tasks listed
-     01-{task-title-slug}.md
-     02-{task-title-slug}.md
-     03-{task-title-slug}.md
-     ...
-   ```
-
-   **Index file** (`00-index.md`):
-   ```markdown
-   # Task Breakdown: {feature-name}
-   **Date:** {date}
-   **Mode:** local (GitHub CLI not available)
-   **Total tasks:** {N}
-
-   ## Tasks
-   | # | File | Title | Label | Group | Complexity | Dependencies |
-   |---|------|-------|-------|-------|------------|--------------|
-   | 1 | 01-{slug}.md | {title} | {label} | {group} | {complexity} | {none or Task N} |
-   | 2 | 02-{slug}.md | {title} | {label} | {group} | {complexity} | {Task 1} |
-
-   ## Suggested Order
-   1. {task} — {reason}
-   2. {task} — {reason}
-
-   ---
-   *To create GitHub issues later, run `/issue` with each task file or use `gh issue create` manually.*
-   ```
-
-   **Each task file** (`NN-{slug}.md`):
-   ```markdown
-   # {task title}
-   **Label:** {feature/fix/refactor/enhancement}
-   **Group:** {group name}
-   **Complexity:** {simple/standard/complex}
-   **Dependencies:** {none | Task N — title}
-
-   ## Description
-   {task description from breakdown}
-
-   ## Acceptance Criteria
-   - [ ] **AC-1**: Given {context}, When {action}, Then {result}
-   - [ ] **AC-2**: Given {context}, When {action}, Then {result}
-
-   ## Technical Context
-   {files, patterns, architecture guidance from breakdown}
-
-   ## Architecture Guidance
-   {what pattern to follow, interfaces to respect}
-
-   ---
-   *Task created by dev-team planning flow*
-   ```
-
-6. **Report to the user**:
-   - **GitHub mode:** list all created issues with their numbers, titles, labels, and complexity.
-   - **Local mode:** list all task files created, their titles, and the path to the tasks folder. Inform the user: "Tasks written locally to `session-docs/{feature-name}/tasks/`. GitHub CLI was not available — you can create issues later by running `/issue` with each task or using `gh issue create` manually."
-
-#### Mode: `plan` — STOP here
-
-Do NOT execute Phases 2-5. The planning flow ends after reporting.
-
-#### Mode: `plan-and-execute` — Continue to execution
-
-After completing the planning phase, transition to batch execution:
-
-1. **Create `session-docs/batch-progress.md`** using the Multi-Task Orchestration format (see that section). Each task becomes an entry in the batch — whether from GitHub issues or local task files:
-   ```markdown
-   # Batch Progress — Plan & Execute
-   **Created:** {date}
-   **Parent:** {parent issue or "text input"}
-   **Source:** {GitHub issues | local task files}
-   **Total tasks:** {N}
-
-   ## Tasks
-   | # | Ref | Task | Status | Feature Folder | Notes |
-   |---|-----|------|--------|----------------|-------|
-   | 1 | #{n1} or 01-slug.md | {title} | PENDING | {feature-name-1} | |
-   | 2 | #{n2} or 02-slug.md | {title} | PENDING | {feature-name-2} | |
-   ```
-
-2. **Process each task** through the full pipeline following the suggested order from `01-planning.md`. For each task:
-   - Read the task data you already have (title, description, AC, labels) — do NOT call `gh issue view` again
-   - Create a new `session-docs/{task-feature-name}/` folder
-   - Run the standard flow: Phase 0a (intake) → Phase 0b (specify — light, since the task already has structured AC) → Phase 1 (design) → Phase 2 (implementation) → Phase 3 (verify — tester + qa in parallel) → Phase 4 (delivery) → Phase 5 (GitHub update, only if gh is available)
-   - Update `batch-progress.md` at every phase transition
-   - Respect dependencies from `01-planning.md` — do not start a task until its dependencies are `DONE`
-
-3. **After all tasks complete**, report the full batch summary to the user.
-
-**Phase Plan for `00-task-intake.md` when type is `plan`:**
-```markdown
-## Phase Plan
-- [x] Specify (orchestrator)
-- [ ] Design — planning mode (architect)
-- [ ] Create tasks (orchestrator — GitHub issues or local files)
-- [ ] Report results
-```
-
-**Phase Plan for `00-task-intake.md` when type is `plan-and-execute`:**
-```markdown
-## Phase Plan
-- [x] Specify (orchestrator)
-- [ ] Design — planning mode (architect)
-- [ ] Create tasks (orchestrator — GitHub issues or local files)
-- [ ] Execute each task through full pipeline
-- [ ] Report batch results
-```
+**Mode: `plan-and-execute`** → create `batch-progress.md` and process each task through the full pipeline (use Multi-Task Orchestration rules). Respect dependencies from `01-planning.md`.
 
 ---
 
@@ -866,64 +466,18 @@ At the end of a successful orchestration, report to the user:
 
 ## Direct Modes
 
-When invoked with a `Direct Mode Task` (from a skill), execute only the specified flow — not the full pipeline. All direct modes route through you to maintain session-docs consistency and unified reporting.
+When invoked with a `Direct Mode Task` (from a skill), execute only the specified flow — not the full pipeline. Set up session-docs as needed, invoke the agent, report results, and STOP. If a required prerequisite is missing, inform the user.
 
-### Mode: research
-1. Create `session-docs/{topic-slug}/`
-2. Invoke `architect` in research mode with the topic
-3. Present `00-research.md` to the user
-4. STOP
-
-### Mode: review
-1. Invoke `reviewer` with the PR number
-2. Report the review results (approve/request-changes) to the user
-3. STOP
-
-### Mode: init
-1. Invoke `init` on the current repository
-2. Report what was generated (CLAUDE.md, CHANGELOG.md, etc.)
-3. STOP
-
-### Mode: design
-1. Create `session-docs/{feature-name}/`
-2. Intake + Specify (write `00-task-intake.md`)
-3. Invoke `architect` in design mode
-4. Present `01-architecture.md` to the user
-5. STOP
-
-### Mode: test
-1. Read existing `session-docs/{feature-name}/` — must have `02-implementation.md`
-2. If no implementation found, inform the user and STOP
-3. Invoke `tester` with the feature context
-4. Report test results
-5. STOP
-
-### Mode: validate
-1. Read existing `session-docs/{feature-name}/` — must have `00-task-intake.md` (with AC) and implementation
-2. If prerequisites missing, inform the user and STOP
-3. Invoke `qa` in validate mode
-4. Report validation results
-5. STOP
-
-### Mode: deliver
-1. Read existing `session-docs/{feature-name}/` — must have implementation + validation docs
-2. If prerequisites missing, inform the user and STOP
-3. Invoke `delivery` with the feature context
-4. Report delivery results (branch, PR, version)
-5. STOP
-
-### Mode: define-ac
-1. Create `session-docs/{feature-name}/` if needed
-2. Invoke `qa` in define-ac mode with the issue/description data
-3. QA writes criteria to `session-docs/{feature-name}/00-acceptance-criteria.md`
-4. Present the defined criteria to the user
-5. STOP
-
-For all direct modes:
-- Set up session-docs as needed
-- Report results clearly to the user
-- Do NOT run the full pipeline — execute only the specified flow
-- If a required prerequisite is missing (e.g., `/test` without implementation), inform the user what's needed first
+| Mode | Agent | Prerequisites | Flow |
+|------|-------|--------------|------|
+| research | `architect` (research mode) | none | create session-docs → invoke → present `00-research.md` |
+| review | `reviewer` | PR number | invoke → report approve/changes |
+| init | `init` | none | invoke → report generated files |
+| design | `architect` (design mode) | none | intake + specify → invoke → present `01-architecture.md` |
+| test | `tester` | `02-implementation.md` | invoke → report results |
+| validate | `qa` (validate mode) | `00-task-intake.md` + implementation | invoke → report results |
+| deliver | `delivery` | implementation + validation | invoke → report branch/PR/version |
+| define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
 
 ---
 

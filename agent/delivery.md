@@ -215,29 +215,10 @@ Do NOT stage unrelated files.
 
 **Always create a PR targeting `main`.** If a GitHub issue was detected in Step 2, link it using `Closes #{number}`.
 
-**With GitHub issue:**
 ```
 gh pr create --base main --title "{type}({feature_name}): {short summary}" --body "$(cat <<'EOF'
-Closes #{number}
+Closes #{number}   ← include only if GitHub issue was detected in Step 2
 
-## Summary
-- {bullet points of what was done}
-
-## Changes
-- {files changed}
-
-## Tests
-- {test results}
-
-## Version
-- {old} → {new}
-EOF
-)"
-```
-
-**Without GitHub issue:**
-```
-gh pr create --base main --title "{type}({feature_name}): {short summary}" --body "$(cat <<'EOF'
 ## Summary
 - {bullet points of what was done}
 
@@ -305,24 +286,10 @@ Write delivery summary to `session-docs/{feature-name}/05-delivery.md`:
 
 ---
 
-## Output Requirements
-
-Your final message MUST include:
-1. CLAUDE.md memory sections updated (or "no reusable knowledge")
-2. README.md updated (if applicable)
-3. CHANGELOG entry added
-4. Version bumped (from → to)
-5. OpenAPI updated (yes/no/N/A)
-6. Branch name and commit hash
-7. Commit message
-8. PR URL (targeting main)
-
 ## Quality Standards
 
 - Memory entries should be concise (1-2 lines) and useful for future agents
-- Use proper Markdown with headers, code blocks, and lists
 - Include actual paths, schemas, and config keys from the implementation
-- Cross-reference related code where helpful
 
 ---
 

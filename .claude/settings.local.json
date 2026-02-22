@@ -8,7 +8,11 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:martinfowler.com)",
       "WebFetch(domain:www.thoughtworks.com)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git:*)",
+      "Bash(cp:*)",
+      "Bash(grep:*)",
+      "Bash(diff:*)"
     ]
   }
 }
