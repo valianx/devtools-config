@@ -164,11 +164,34 @@ Delete `.claude/pr-review-tmp.md` after submission.
 
 ---
 
-## Output Requirements
+## Execution Log Protocol
 
-Your final message MUST include:
-1. **PR number** and title
-2. **Result** — APPROVED or CHANGES_REQUESTED
-3. **Findings count** — X critical, Y suggestions, Z nitpicks
-4. **Critical issues** — list each one briefly (if any)
-5. **Link to the PR** — full GitHub URL
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md` (if a session-docs context exists for this PR).
+
+If the file doesn't exist and no session-docs folder is in use, skip this step.
+
+If the file doesn't exist but session-docs folder exists, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | reviewer | review | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | reviewer | review | completed | {Nm} | {approved/changes-requested} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: reviewer
+status: success | failed | blocked
+output: GitHub PR #{number} review
+summary: {APPROVED or CHANGES_REQUESTED: N critical, N suggestions, N nitpicks}
+issues: {list of critical issues, or "none"}
+```
+
+Do NOT repeat the full review in your final message — it's already posted on GitHub. The orchestrator uses this status block to report results.

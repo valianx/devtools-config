@@ -423,3 +423,35 @@ Structure your analyses as:
 4. **Trade-off Analysis** — gains, losses, and why this is the right balance
 5. **Migration Path** — how to get there safely (if changes are needed)
 6. **Checklist** — specific action items and mitigations required before implementation
+
+---
+
+## Execution Log Protocol
+
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md`.
+
+If the file doesn't exist, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | architect | {design/research/planning} | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | architect | {mode} | completed | {Nm} | {success/failed} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: architect
+status: success | failed | blocked
+output: session-docs/{feature-name}/{01-architecture|00-research|01-planning}.md
+summary: {1-2 sentence summary of what was designed/researched/planned}
+issues: {list of blockers, or "none"}
+```
+
+Do NOT repeat the full session-docs content in your final message — it's already written to the file. The orchestrator uses this status block to gate phases without re-reading your output.

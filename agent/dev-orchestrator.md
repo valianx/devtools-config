@@ -29,6 +29,8 @@ Session-docs is the communication channel between agents. Each agent reads previ
 
 ```
 session-docs/{feature-name}/
+  00-state.md              ← you write this (orchestrator) — pipeline checkpoint
+  00-execution-log.md      ← all agents append to this
   00-task-intake.md        ← you write this (orchestrator)
   01-architecture.md       ← architect
   02-implementation.md     ← implementer
@@ -38,10 +40,52 @@ session-docs/{feature-name}/
 ```
 
 **At task start:**
-1. Use Glob to check for existing `session-docs/{feature-name}/`. If it exists, read ALL files to resume from where the team left off.
+1. Use Glob to check for existing `session-docs/{feature-name}/`. If it exists, **read `00-state.md` first** (pipeline checkpoint), then read other files as needed to resume.
 2. Create the folder if it doesn't exist.
 3. Ensure `.gitignore` includes `/session-docs`.
 4. Pass `{feature-name}` to every agent so they write to the correct folder.
+
+---
+
+## Phase Checkpointing
+
+After EVERY phase transition, update `session-docs/{feature-name}/00-state.md`. This is your persistent memory — if context compacts, this file tells you exactly where you are.
+
+```markdown
+# Pipeline State: {feature-name}
+**Last updated:** {timestamp}
+
+## Current State
+- phase: {0a|0b|1|2|3|4|5}
+- status: {in_progress|waiting|iterating|complete}
+- iteration: {N}/3
+- last_completed: {phase-name}
+- next_action: {what to do next}
+
+## Agent Results
+| Agent | Phase | Status | Summary |
+|-------|-------|--------|---------|
+| orchestrator | 0b-specify | success | task-intake written with 5 AC |
+| architect | 1-design | success | proposed repository pattern |
+
+## Hot Context
+<!-- Knowledge discovered in THIS pipeline run that subsequent agents need.
+     Pass relevant items to each agent invocation. -->
+- {insight relevant to future phases}
+
+## Recovery Instructions
+If reading this after context compaction:
+1. Read this file for pipeline state
+2. Read 00-execution-log.md for timing
+3. {exactly what to do next}
+```
+
+**Rules:**
+- Update BEFORE starting each new phase
+- On happy path: update status, add agent result row, proceed
+- On failure: record failure details, iteration count, what needs fixing
+- Always keep "Recovery Instructions" current with the exact next step
+- Keep "Hot Context" updated with cross-cutting insights (e.g., "DB uses soft deletes", "auth middleware already validates JWT")
 
 ---
 
@@ -313,8 +357,19 @@ For **hotfix/simple** tasks that skip SPECIFY, write a minimal `00-task-intake.m
 - Task description and scope from `00-task-intake.md`
 - Feature name for session-docs
 - Any relevant file paths or code references
+- Hot Context items from `00-state.md` (if any)
 
-**Gate:** Review the architecture proposal. Confirm it addresses the task scope, security risks, and provides clear implementation guidance. If insufficient, ask the architect to revise (iteration within phase).
+**Gate (status-block):** The architect returns a compact status block. If `status: success` → update `00-state.md`, add architect result to Agent Results table, extract any hot context insights from summary, proceed to Phase 2. If `status: failed` or `status: blocked` → read `01-architecture.md` to understand the issue and decide how to proceed.
+
+**Do NOT read `01-architecture.md` on happy path.** Trust the status block for success cases. The implementer will read the full proposal.
+
+**Report to user:**
+```
+✓ Phase 1/5 — Design — completed
+  Agent: architect | Output: 01-architecture.md
+  {summary from status block}
+→ Next: Phase 2 — Implementation
+```
 
 ---
 
@@ -324,16 +379,23 @@ For **hotfix/simple** tasks that skip SPECIFY, write a minimal `00-task-intake.m
 
 **Invoke via Task tool** with context:
 - Feature name for session-docs
-- Summary of architecture decisions from Phase 1
+- Brief summary of architecture decisions (from architect's status block summary, NOT from re-reading 01-architecture.md)
 - List of acceptance criteria
+- Hot Context items from `00-state.md`
 
-**Gate:** The implementer must confirm:
-- Build passes
-- Lint passes
-- No obvious errors
-- Implementation matches the architecture proposal
+**Gate (status-block):** The implementer returns a compact status block. If `status: success` → update `00-state.md`, add result to Agent Results table, extract hot context (e.g., new dependencies, gotchas), proceed to Phase 3. If `status: failed` → read `02-implementation.md` to understand the issue.
+
+**Do NOT read `02-implementation.md` on happy path.** The tester and QA will read it directly.
 
 If build/lint fails, the implementer fixes it before finishing (internal loop).
+
+**Report to user:**
+```
+✓ Phase 2/5 — Implementation — completed
+  Agent: implementer | Output: 02-implementation.md
+  {summary from status block}
+→ Next: Phase 3 — Verify (tester + qa in parallel)
+```
 
 ---
 
@@ -342,20 +404,32 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
 **Agents:** `tester` + `qa` (validate mode) — **launched in parallel**
 
 Launch both agents simultaneously using two Task tool calls in the same message:
-- **tester**: feature name, list of files created/modified from `02-implementation.md`
-- **qa** (validate mode): feature name, summary of what was implemented
+- **tester**: feature name, list of files created/modified (from implementer's status block summary), Hot Context from `00-state.md`
+- **qa** (validate mode): feature name, summary of what was implemented (from implementer's status block summary)
 
-**Gate:** Both agents must pass. Wait for both results before proceeding.
+**Gate (status-block):** Both agents return compact status blocks. Read both:
+- If both `status: success` → update `00-state.md`, proceed to Phase 4
+- If either `status: failed` → **ONLY THEN** read the failing agent's session-docs (`03-testing.md` and/or `04-validation.md`) to understand what went wrong
+
+**Do NOT read `03-testing.md` or `04-validation.md` on happy path.** Trust the status blocks.
+
+**Report to user:**
+```
+✓ Phase 3/5 — Verify — completed (or ITERATING)
+  tester: {status} | qa: {status}
+  {summary from each status block}
+→ Next: Phase 4 — Delivery (or: Iterating — implementer fixing N issues)
+```
 
 ### If either fails → ITERATE
 
-Collect both reports (`03-testing.md` and `04-validation.md`) and analyze root cause:
+Read the failing agent's session-docs to understand root cause. Then:
 
 **Case A — Implementation issue** (tests fail or code doesn't meet criteria):
 1. Merge all failures into a single brief for the implementer:
-   - Failing test names and error messages (from tester)
-   - Failed AC with file references (from QA)
-2. Route to `implementer` with the merged brief
+   - Failing test names and error messages (from `03-testing.md`)
+   - Failed AC with file references (from `04-validation.md`)
+2. Route to `implementer` with the merged brief + Hot Context
 3. After fix → **re-run both agents in parallel** (repeat Phase 3)
 
 **Case B — Design issue** (architecture doesn't support a requirement):
@@ -367,7 +441,7 @@ Collect both reports (`03-testing.md` and `04-validation.md`) and analyze root c
 1. Adjust criteria in `00-task-intake.md`
 2. **Re-run both agents in parallel** (repeat Phase 3)
 
-**Max 3 iterations.** Each round-trip (implementer fixes → tester+qa re-run) = 1 iteration. If exceeded, try an alternative approach or simplify scope. Escalate to user as last resort.
+**Max 3 iterations.** Each round-trip (implementer fixes → tester+qa re-run) = 1 iteration. Update `00-state.md` iteration count at each loop. If exceeded, try an alternative approach or simplify scope. Escalate to user as last resort.
 
 ---
 
@@ -377,11 +451,20 @@ Collect both reports (`03-testing.md` and `04-validation.md`) and analyze root c
 
 **Invoke via Task tool** with context:
 - Feature name for session-docs
-- Summary of what was built, tested, and validated
+- Summary of what was built, tested, and validated (from status block summaries, NOT re-reading session-docs)
+- Hot Context from `00-state.md`
 
-**Gate:** Documentation created, version bumped, commit pushed to feature branch.
+**Gate (status-block):** The delivery agent returns a compact status block. If `status: success` → update `00-state.md` with branch, version, and PR info, proceed to Phase 5. If `status: failed` → report to the user.
 
 This phase does NOT iterate — if it fails (e.g., push rejected), report to the user.
+
+**Report to user:**
+```
+✓ Phase 4/5 — Delivery — completed
+  Agent: delivery | Branch: {branch} | Version: {version}
+  {summary from status block}
+→ Next: Phase 5 — GitHub Update
+```
 
 ---
 
@@ -738,20 +821,29 @@ After completing the planning phase, transition to batch execution:
 
 ### To the user — report at every phase transition:
 ```
-Phase {N}: {Phase Name} — {PASS / FAIL / ITERATING}
-Agent: {agent name}
-Result: {what happened}
-Issues: {any problems found}
-Next: {what happens next}
-Iteration: {N}/3 (if in a loop)
+✓ Phase {N}/{total} — {Phase Name} — {result}
+  Agent: {agent} | Output: {session-doc file}
+  {1-line summary from status block}
+→ Next: Phase {N+1} — {what happens next}
+```
+
+On failure or iteration:
+```
+✗ Phase {N}/{total} — {Phase Name} — FAILED
+  Agent: {agent} | Issue: {what went wrong}
+⟳ Iterating ({N}/3): routing to {agent} to fix
 ```
 
 ### To agents — always include in every invocation:
 - Feature name (for session-docs path)
 - Task type and scope
-- What previous agents produced (brief summary)
+- Brief summary from previous agent's status block (NOT full session-docs content)
+- Hot Context items from `00-state.md` relevant to this agent
 - What you expect from this agent
 - If iterating: what failed and what needs to change
+
+### Status block expectations:
+Every agent returns a compact status block as its final message. You use this to gate phases without re-reading session-docs. See agent Return Protocol for format.
 
 ---
 
@@ -837,13 +929,13 @@ For all direct modes:
 
 ## Compact Instructions
 
-When context is compacted (auto or manual), you MUST preserve:
+When context is compacted (auto or manual), recovery is simple because state lives in files:
 
-- **Current task:** which task you are working on right now (name, phase, iteration count)
-- **Batch state:** path to `session-docs/batch-progress.md` and how many tasks are done/pending
-- **Current phase:** which phase (0-5) you are in and which agent(s) you are waiting on
-- **Iteration state:** if in a loop (test fail / QA fail), which iteration number (N/3) and what failed
-- **GitHub issue:** issue number and current board status (if applicable)
-- **Feature name:** the current `session-docs/{feature-name}/` path
+**After compaction, your first action MUST be:**
 
-**After compaction, your first action MUST be:** read `session-docs/batch-progress.md` (if batch) and the current task's session-docs folder to fully recover state before continuing.
+1. **Read `session-docs/{feature-name}/00-state.md`** — this has your pipeline checkpoint: current phase, iteration count, agent results, hot context, and exact recovery instructions.
+2. **Read `session-docs/batch-progress.md`** (if batch) — for multi-task state.
+3. **Read `session-docs/{feature-name}/00-execution-log.md`** — for timing and what ran.
+4. **Follow the Recovery Instructions** in `00-state.md` — they tell you exactly what to do next.
+
+**Do NOT re-read all session-docs.** The state file has everything you need to resume. Only read specific agent outputs if you need to debug a failure.

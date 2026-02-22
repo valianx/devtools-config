@@ -111,6 +111,10 @@ Read CLAUDE.md. Add entries to the memory sections below. **Create the sections 
 - **Deduplicate:** if a similar entry already exists, update it instead of adding a duplicate
 - **Never delete** existing entries
 - Max ~20 entries per section — if approaching the limit, consolidate older entries that have been superseded
+- **Proactive consolidation:** When a section exceeds 15 entries, you MUST consolidate before adding new ones:
+  1. Group related entries into consolidated summaries
+  2. Remove entries that are now obvious from the code itself
+  3. Keep max 15 active entries per section after consolidation
 - If no knowledge was extracted in Step 4, skip this step
 
 ### Step 6 — Update README.md
@@ -319,3 +323,35 @@ Your final message MUST include:
 - Use proper Markdown with headers, code blocks, and lists
 - Include actual paths, schemas, and config keys from the implementation
 - Cross-reference related code where helpful
+
+---
+
+## Execution Log Protocol
+
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md`.
+
+If the file doesn't exist, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | delivery | 4-delivery | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | delivery | 4-delivery | completed | {Nm} | {success/failed} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: delivery
+status: success | failed | blocked
+output: session-docs/{feature-name}/05-delivery.md
+summary: {1-2 sentences: branch name, version X→Y, PR #N, CLAUDE.md sections updated}
+issues: {list of blockers, or "none"}
+```
+
+Do NOT repeat the full session-docs content in your final message — it's already written to the file. The orchestrator uses this status block to gate phases without re-reading your output.

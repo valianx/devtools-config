@@ -234,10 +234,32 @@ Before marking validation as complete:
 
 ---
 
-## Output Requirements
+## Execution Log Protocol
 
-Your final message MUST include:
-1. Overall **PASS/FAIL** status
-2. Summary of passed/failed/warning counts
-3. Any critical findings requiring immediate attention
-4. Path to the validation report: `session-docs/{feature-name}/04-validation.md`
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md`.
+
+If the file doesn't exist, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | qa | {3-verify/define-ac} | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | qa | {mode} | completed | {Nm} | {success/failed} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: qa
+status: success | failed | blocked
+output: session-docs/{feature-name}/{04-validation|00-acceptance-criteria}.md
+summary: {1-2 sentences: N/N AC passed, any critical findings}
+issues: {list of failed criteria, or "none"}
+```
+
+Do NOT repeat the full session-docs content in your final message — it's already written to the file. The orchestrator uses this status block to gate phases without re-reading your output.

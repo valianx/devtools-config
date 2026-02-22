@@ -247,6 +247,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Execution Log Protocol
+
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md` (if a session-docs context exists).
+
+If no session-docs folder is in use (init is typically run standalone), skip this step.
+
+If the file doesn't exist but session-docs folder exists, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | init | init | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | init | init | completed | {Nm} | {success/failed} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: init
+status: success | failed | blocked
+output: CLAUDE.md, CHANGELOG.md
+summary: {1-2 sentences: project type, tech stack, what was created/updated}
+issues: {list of TBD items, or "none"}
+```
+
+Do NOT repeat the full CLAUDE.md content in your final message — it's already written to the file. The orchestrator uses this status block to report results.
+
+---
+
 ## Output Requirements
 
 Your final response MUST include:

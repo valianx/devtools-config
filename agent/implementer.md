@@ -240,12 +240,32 @@ Write your implementation summary to `session-docs/{feature-name}/02-implementat
 
 ---
 
-## Output Requirements
+## Execution Log Protocol
 
-Your final message MUST include:
-1. **Files created/modified** — full list with brief purpose
-2. **Architecture alignment** — confirm implementation follows the proposal, or explain deviations
-3. **Dependencies added** — any new packages or libraries
-4. **Migrations created** — any database changes
-5. **Known limitations** — anything left for follow-up
-6. **Next step recommendation** — typically "ready for tester" or "needs architecture review for {issue}"
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md`.
+
+If the file doesn't exist, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | implementer | 2-implement | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | implementer | 2-implement | completed | {Nm} | {success/failed} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: implementer
+status: success | failed | blocked
+output: session-docs/{feature-name}/02-implementation.md
+summary: {1-2 sentences: N files created/modified, key patterns used, any deviations}
+issues: {list of blockers, or "none"}
+```
+
+Do NOT repeat the full session-docs content in your final message — it's already written to the file. The orchestrator uses this status block to gate phases without re-reading your output.

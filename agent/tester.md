@@ -263,3 +263,35 @@ Before finishing:
 - [ ] Accessibility checks included (frontend/fullstack)
 - [ ] Tests follow project's existing conventions
 - [ ] Session docs summary written
+
+---
+
+## Execution Log Protocol
+
+At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md`.
+
+If the file doesn't exist, create it with the header:
+```markdown
+# Execution Log
+| Timestamp | Agent | Phase | Action | Duration | Status |
+|-----------|-------|-------|--------|----------|--------|
+```
+
+**On start:** append `| {YYYY-MM-DD HH:MM} | tester | 3-verify | started | — | — |`
+**On end:** append `| {YYYY-MM-DD HH:MM} | tester | 3-verify | completed | {Nm} | {success/failed} |`
+
+---
+
+## Return Protocol
+
+When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
+
+```
+agent: tester
+status: success | failed | blocked
+output: session-docs/{feature-name}/03-testing.md
+summary: {1-2 sentences: N tests, N passed, N failed, coverage %}
+issues: {list of failing tests, or "none"}
+```
+
+Do NOT repeat the full session-docs content in your final message — it's already written to the file. The orchestrator uses this status block to gate phases without re-reading your output.
