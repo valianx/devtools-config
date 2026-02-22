@@ -471,13 +471,107 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | Mode | Agent | Prerequisites | Flow |
 |------|-------|--------------|------|
 | research | `architect` (research mode) | none | create session-docs → invoke → present `00-research.md` |
-| review | `reviewer` | PR number | invoke → report approve/changes |
+| review | `architect` + `reviewer` + `qa` | PR metadata from skill | AC generation → parallel review+validate → consolidate → user approval → publish |
 | init | `init` | none | invoke → report generated files |
 | design | `architect` (design mode) | none | intake + specify → invoke → present `01-architecture.md` |
 | test | `tester` | `02-implementation.md` | invoke → report results |
 | validate | `qa` (validate mode) | `00-task-intake.md` + implementation | invoke → report results |
 | deliver | `delivery` | implementation + validation | invoke → report branch/PR/version |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
+
+### Review Mode — Detailed Flow
+
+When invoked with `Direct Mode Task: review`:
+
+#### Step 1 — Fetch PR context
+
+The `/review-pr` skill already passed the PR metadata. Extract:
+- PR number, title, body, base/head branches, additions/deletions
+- Linked issue number, title, body, labels (if detected by the skill)
+
+If the skill didn't detect a linked issue but the PR body references one (e.g., "Closes #123", "Fixes #123"), fetch it:
+```
+gh issue view {number} --json body,title,labels
+```
+
+#### Step 2 — Generate AC
+
+Invoke `architect` in **pr-analysis mode** via Task tool, passing:
+- PR title, body, linked issue body (if available), and diff file list
+- Instruct: "pr-analysis mode — generate testable acceptance criteria from this PR/issue context"
+
+The architect returns an AC list in its status block. Extract the `ac_list` for use in Step 3.
+
+Note: session-docs are ephemeral and won't exist at review time, so AC are always generated fresh from the PR/issue context.
+
+#### Step 3 — Parallel analysis
+
+Launch in parallel (two Task tool calls in the same message):
+- **`reviewer`** with `orchestrated: true` — code quality analysis. Pass PR metadata (number, base, head branches). The reviewer writes findings to `.claude/pr-review-findings.md` and returns a status block.
+- **`qa`** in **validate-pr mode** — validates AC against PR diff. Pass the AC list from Step 2, PR base/head branches. The QA returns AC validation results in its status block.
+
+#### Step 4 — Consolidate review
+
+Read `.claude/pr-review-findings.md` (reviewer findings) and QA's status block (AC results). Build a consolidated review:
+
+```markdown
+## Code Review
+
+**Result:** APPROVED / CHANGES REQUESTED
+**PR:** #{number} — {title}
+**Author:** {author}
+**Files reviewed:** {N}
+**Additions:** +{N} | **Deletions:** -{N}
+
+### Acceptance Criteria
+| # | Criteria | Status | Evidence |
+|---|----------|--------|----------|
+| AC-1 | Given X, When Y, Then Z | PASS/FAIL | `file:line` |
+| AC-2 | Given X, When Y, Then Z | PASS/FAIL | `file:line` |
+
+{if any FAIL: "**{N} acceptance criteria failed** — see details above"}
+
+### Critical Issues
+- `file.ts:42` — {description and suggested fix}
+
+### Suggestions
+- `file.ts:15` — {description}
+
+### Nitpicks
+- `file.ts:8` — {description}
+
+### Summary
+{1-2 sentences overall assessment}
+```
+
+Omit any section with no findings.
+
+**Decision logic:**
+- 0 critical code issues AND 0 failed AC → suggest **APPROVE**
+- 1+ critical code issues OR 1+ failed AC → suggest **CHANGES REQUESTED**
+
+#### Step 5 — Present draft to user
+
+Write consolidated review to `.claude/pr-review-draft.md`. Show the draft to the user and ask: "Review draft ready. Approve to publish, or tell me what to change."
+
+#### Step 6 — Publish or edit
+
+- **User approves**: determine approve/request-changes based on decision logic (user can override), then publish:
+  ```
+  gh pr review {number} --approve -F .claude/pr-review-draft.md
+  ```
+  or:
+  ```
+  gh pr review {number} --request-changes -F .claude/pr-review-draft.md
+  ```
+
+- **User requests edits**: modify the draft per user's feedback, show again, repeat until approved.
+
+- **User wants to re-review**: re-run the full flow from Step 1.
+
+#### Cleanup
+
+After publishing, delete temporary files: `.claude/pr-review-findings.md`, `.claude/pr-review-draft.md`.
 
 ---
 
