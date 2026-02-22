@@ -1,4 +1,4 @@
-# devtools-local-config
+# devtools-config
 
 Sistema de agentes especializados para desarrollo de software con Claude Code. Un equipo de agentes coordinados por un orchestrator central que maneja el ciclo completo: desde la planificacion hasta el delivery.
 
