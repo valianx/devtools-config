@@ -126,42 +126,54 @@ Describe existing patterns as found in the code — do NOT prescribe patterns th
 - Dependency direction rules
 - Instruction: architectural changes must be reviewed by the architect subagent before implementation
 
-**6. Interfaces & Contracts** *(backend/fullstack only)*
+**6. Architecture Decisions**
+<!-- Populated by delivery agent after each feature. Leave empty at init. -->
+
+**7. Patterns & Conventions**
+<!-- Populated by delivery agent after each feature. Leave empty at init. -->
+
+**8. Known Constraints**
+<!-- Populated by delivery agent after each feature. Leave empty at init. -->
+
+**9. Testing Conventions**
+<!-- Populated by delivery agent after each feature. Leave empty at init. -->
+
+**10. Interfaces & Contracts** *(backend/fullstack only)*
 - HTTP endpoints location and how to add new ones
 - Event schemas/topics (if applicable)
 - DTO/validation conventions
 
-**7. Page & Routing Structure** *(frontend/fullstack only)*
+**11. Page & Routing Structure** *(frontend/fullstack only)*
 - How pages/routes are organized
 - Dynamic routes, layouts, metadata conventions
 
-**8. State & Data Patterns** *(frontend/fullstack only)*
+**12. State & Data Patterns** *(frontend/fullstack only)*
 - Server state vs client state approach
 - Form handling patterns
 - Caching strategies
 
-**9. Security & Compliance** *(backend/fullstack only)*
+**13. Security & Compliance** *(backend/fullstack only)*
 - AuthN/AuthZ boundary notes
 - Secrets handling (env vars, secret manager)
 - PII/logging redaction rules
 
-**10. Performance & Accessibility** *(frontend/fullstack only)*
+**14. Performance & Accessibility** *(frontend/fullstack only)*
 - Core Web Vitals targets (if defined)
 - Image/bundle optimization approach
 - WCAG compliance level (if defined)
 
-**11. Observability** *(backend/fullstack only)*
+**15. Observability** *(backend/fullstack only)*
 - Logging format and required fields
 - Tracing conventions
 - Metrics (if present)
 
-**12. Git & Delivery Conventions**
+**16. Git & Delivery Conventions**
 - Branch naming convention
 - Commit message style (conventional commits recommended)
 - PR/documentation requirements
 - Safe change policy
 
-**13. Subagent Orchestration**
+**17. Subagent Orchestration**
 Include a routing table based on the detected project type.
 
 | Intent | Subagent | Output |
@@ -178,7 +190,7 @@ Escalation rules:
 - DB schema changes → recommend architecture review
 - Accessibility-sensitive → route to frontend architect
 
-**14. When to Ask Humans**
+**18. When to Ask Humans**
 - Business rule ambiguity
 - Production data migrations
 - Changes impacting payments/auth/admin/PII

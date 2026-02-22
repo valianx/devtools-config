@@ -138,11 +138,11 @@ Omit any section that has no findings (e.g., if there are no nitpicks, skip the 
 
 ### Step 2 — Write the review to a temp file
 
-Write the review body to a temporary file to avoid shell escaping issues:
+Use the Write tool to write the review body to a temporary file to avoid shell escaping issues:
 
 ```
-# Write review content to temp file
-Write review body → /tmp/pr-review.md
+# Write review content using the Write tool (cross-platform)
+Write review body → .claude/pr-review-tmp.md
 ```
 
 ### Step 3 — Submit the review
@@ -151,16 +151,16 @@ Based on the decision:
 
 - **Approve:**
   ```
-  gh pr review {number} --approve -F /tmp/pr-review.md
+  gh pr review {number} --approve -F .claude/pr-review-tmp.md
   ```
 - **Request changes:**
   ```
-  gh pr review {number} --request-changes -F /tmp/pr-review.md
+  gh pr review {number} --request-changes -F .claude/pr-review-tmp.md
   ```
 
 ### Step 4 — Clean up
 
-Delete the temp file after submission.
+Delete `.claude/pr-review-tmp.md` after submission.
 
 ---
 
