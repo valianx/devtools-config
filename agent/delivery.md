@@ -1,5 +1,5 @@
 ---
-name: dt-delivery
+name: delivery
 description: Documents a completed feature, updates CHANGELOG and OpenAPI (if applicable), bumps the project version, creates a feature branch, commits, and pushes. Produces /docs/{feature_name}.md and a clean delivery commit.
 model: opus
 color: green
@@ -236,7 +236,7 @@ Write delivery summary to `session-docs/{feature-name}/05-delivery.md`:
 ```markdown
 # Delivery Summary: {feature-name}
 **Date:** {date}
-**Agent:** dt-delivery
+**Agent:** delivery
 **Project type:** {backend/frontend/fullstack}
 
 ## Documentation Created

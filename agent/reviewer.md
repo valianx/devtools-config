@@ -1,5 +1,5 @@
 ---
-name: dt-reviewer
+name: reviewer
 description: Reviews pull requests on GitHub. Analyzes code quality, security, performance, and best practices. Leaves detailed review comments and approves or requests changes.
 model: opus
 color: yellow

@@ -1,5 +1,5 @@
 ---
-name: dt-tester
+name: tester
 description: Designs and implements test suites for any project type (backend, frontend, or fullstack). Adapts to the project's test framework, ensures proper isolation, mocks external dependencies, and validates business logic, user interactions, and accessibility.
 model: opus
 color: red
@@ -224,7 +224,7 @@ Write your summary to `session-docs/{feature-name}/03-testing.md`:
 ```markdown
 # Testing Summary: {feature-name}
 **Date:** {date}
-**Agent:** dt-tester
+**Agent:** tester
 **Project type:** {backend/frontend/fullstack}
 
 ## Test Strategy

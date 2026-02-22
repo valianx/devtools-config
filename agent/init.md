@@ -1,5 +1,5 @@
 ---
-name: dt-init
+name: init
 description: Bootstraps Claude Code in any repository (backend, frontend, or fullstack). Discovers the tech stack, generates a CLAUDE.md with golden commands and subagent orchestration, and creates a CHANGELOG.md if missing.
 model: opus
 color: green
@@ -166,11 +166,11 @@ Include a routing table based on the detected project type.
 
 | Intent | Subagent | Output |
 |--------|----------|--------|
-| Architecture/design/review (incl. security, performance, a11y) | `dt-architect` | Architecture proposal + risk assessments (no code) |
-| Feature implementation (write code) | `dt-implementer` | Production code following architecture proposal |
-| Test strategy and implementation | `dt-tester` | Test plan + tests with factory mocks |
-| Acceptance criteria and validation | `dt-qa` | QA checklist + validation report |
-| Documentation + version + commit + push | `dt-delivery` | Docs + CHANGELOG + version bump + commit + push |
+| Architecture/design/review (incl. security, performance, a11y) | `architect` | Architecture proposal + risk assessments (no code) |
+| Feature implementation (write code) | `implementer` | Production code following architecture proposal |
+| Test strategy and implementation | `tester` | Test plan + tests with factory mocks |
+| Acceptance criteria and validation | `qa` | QA checklist + validation report |
+| Documentation + version + commit + push | `delivery` | Docs + CHANGELOG + version bump + commit + push |
 
 Escalation rules:
 - Requirements unclear → ask user

@@ -1,5 +1,5 @@
 ---
-name: dt-implementer
+name: implementer
 description: Implements features by writing production code based on architecture proposals and acceptance criteria from session-docs. Follows project conventions, writes clean code, and reports what was built. Does not design architecture, write tests, or create documentation.
 model: opus
 color: orange
@@ -201,7 +201,7 @@ Write your implementation summary to `session-docs/{feature-name}/02-implementat
 ```markdown
 # Implementation Summary: {feature-name}
 **Date:** {date}
-**Agent:** dt-implementer
+**Agent:** implementer
 **Project type:** {backend/frontend/fullstack}
 
 ## Files Created
@@ -234,8 +234,8 @@ Write your implementation summary to `session-docs/{feature-name}/02-implementat
 (or "None")
 
 ## Ready For
-- [ ] Testing (dt-tester)
-- [ ] Validation (dt-qa)
+- [ ] Testing (tester)
+- [ ] Validation (qa)
 ```
 
 ---

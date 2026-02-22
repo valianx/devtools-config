@@ -10,7 +10,10 @@ Analyze the input: $ARGUMENTS
    gh issue view {number} --json number,title,body,labels,assignees,milestone,projectItems
    ```
 3. If the command fails, tell the user: "Issue #{number} not found or `gh` is not configured. Check `gh auth status`."
-4. Pass ALL the issue data to the `dt-orchestrator` agent:
+4. **Assess issue quality** before passing to orchestrator:
+   - `needs-specify: true` — if the issue body is empty, has fewer than 3 lines, has no acceptance criteria, or is vague
+   - `needs-specify: false` — if the issue already has structured AC (Given/When/Then or checkboxes) and clear scope
+5. Pass ALL the issue data to the `dev-orchestrator` agent:
    ```
    GitHub Issue Task:
    - Issue: #{number}
@@ -19,6 +22,8 @@ Analyze the input: $ARGUMENTS
    - Labels: {labels}
    - Milestone: {milestone or "None"}
    - Description: {body}
+   - Needs Specify: {true/false}
+   - Quality Notes: {brief reason — e.g., "no AC defined", "body is empty", "has structured AC"}
    ```
 
 ---
@@ -31,7 +36,10 @@ Analyze the input: $ARGUMENTS
    gh issue view {number} --json number,title,body,labels,assignees,milestone,projectItems
    ```
 3. If any issue fails to load, report which ones failed and continue with the rest
-4. Pass ALL issues as a batch to the `dt-orchestrator` agent:
+4. **Assess each issue's quality** before passing to orchestrator:
+   - `needs-specify: true` — if the issue body is empty, has fewer than 3 lines, has no acceptance criteria, or is vague
+   - `needs-specify: false` — if the issue already has structured AC (Given/When/Then or checkboxes) and clear scope
+5. Pass ALL issues as a batch to the `dev-orchestrator` agent:
    ```
    GitHub Issue Batch (N tasks):
 
@@ -41,6 +49,8 @@ Analyze the input: $ARGUMENTS
    - Title: {title}
    - Labels: {labels}
    - Description: {body}
+   - Needs Specify: {true/false}
+   - Quality Notes: {brief reason}
 
    --- Task 2 ---
    - Issue: #{number}
@@ -70,7 +80,7 @@ Analyze the input: $ARGUMENTS
 
    ## Technical Context
    {any technical details, file paths, or constraints mentioned in the input}
-   (or "To be defined by dt-architect")
+   (or "To be defined by architect")
    EOF
    )"
    ```
@@ -80,7 +90,7 @@ Analyze the input: $ARGUMENTS
    gh issue view {number} --json number,title,body,labels,assignees,milestone,projectItems
    ```
 4. Confirm the created issue number with the user
-5. Pass the issue data to the `dt-orchestrator` agent using the format from Mode 1
+5. Pass the issue data to the `dev-orchestrator` agent using the format from Mode 1
 
 ---
 
@@ -99,6 +109,6 @@ Ask the user: "Provide a GitHub issue number (#123), multiple issues (#12 #13 #1
 ## Important
 
 - **You read/create issues.** The orchestrator does NOT read issues — it receives the data from you.
-- Always invoke the `dt-orchestrator` agent to handle the task — do NOT execute the development pipeline yourself
-- The orchestrator manages the full team: dt-architect → dt-implementer → dt-tester → dt-qa → dt-delivery
+- Always invoke the `dev-orchestrator` agent to handle the task — do NOT execute the development pipeline yourself
+- The orchestrator manages the full team: architect → implementer → tester → qa → delivery
 - The orchestrator will handle project board updates (move to "In Progress", comment, move to "In Review") using the issue number you provide
