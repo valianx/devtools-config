@@ -40,6 +40,7 @@ Todos los skills rutean al orchestrator. Se invocan como `/skill` en Claude Code
 | `/define-ac` | Define criterios de aceptacion |
 | `/deliver` | Delivery standalone |
 | `/review-pr` | Revisa un PR en GitHub |
+| `/lint` | Valida salud de agentes y skills (config, sync, estructura) |
 
 ## Pipeline
 
