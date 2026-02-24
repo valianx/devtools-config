@@ -67,23 +67,31 @@ Analyze the input: $ARGUMENTS
    - **Label**: classify as one of: `bug`, `enhancement`, `feature`, `refactor`, `docs`, `security`
    - **Body**: structured with the template below
 
-2. Create the issue with auto-label and auto-assign:
+2. Create the issue with auto-label, auto-assign, and **SDD-compliant body**:
    ```
    gh issue create --title "{title}" --label "{label}" --assignee "@me" --body "$(cat <<'EOF'
-   ## Description
-   {what needs to be done — rewritten clearly from the user's input}
+   ## User Story
+   As a {role}, I want {action}, so that {benefit}.
 
    ## Acceptance Criteria
-   - [ ] {criterion 1 — derived from the description}
-   - [ ] {criterion 2}
-   - [ ] {criterion 3}
+   - [ ] **AC-1:** Given {context}, When {action}, Then {result}
+   - [ ] **AC-2:** Given {context}, When {action}, Then {result}
+   - [ ] **AC-3:** Given {context}, When {action}, Then {result}
+
+   ## Scope
+   **Included:** {what's in scope — derived from user input}
+   **Excluded:** {what's explicitly out, or "N/A"}
 
    ## Technical Context
-   {any technical details, file paths, or constraints mentioned in the input}
-   (or "To be defined by architect")
+   - **Files:** {affected files/components, or "TBD by architect"}
+   - **Patterns:** {existing patterns to follow, or "TBD by architect"}
+   - **Constraints:** {technical limitations, or "none identified"}
+   - **Dependencies:** {other issues or systems, or "none"}
    EOF
    )"
    ```
+
+   **SDD rules:** min 2 AC, max 20. AC always in Given/When/Then with checkbox. Scope always explicit.
 
 3. Read the created issue to get the full data:
    ```

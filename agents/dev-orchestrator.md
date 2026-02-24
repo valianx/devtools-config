@@ -185,7 +185,31 @@ If any `[NEEDS CLARIFICATION]` markers exist:
 
 ### Step 4 — Update GitHub issue (if applicable)
 
-If `needs-specify: true` (or no flag), update the issue body via `gh issue edit` with: quoted original description, user stories, AC (Given/When/Then), scope, and technical context. If `needs-specify: false`, do NOT overwrite.
+If `needs-specify: true` (or no flag), update the issue body via `gh issue edit` using the **SDD format**:
+
+```markdown
+> **Original description:**
+> {quoted original issue body}
+
+## User Story
+As a {role}, I want {action}, so that {benefit}.
+
+## Acceptance Criteria
+- [ ] **AC-1:** Given {context}, When {action}, Then {result}
+- [ ] **AC-N:** ...
+
+## Scope
+**Included:** {in scope}
+**Excluded:** {out of scope}
+
+## Technical Context
+- **Files:** {affected files/components from Step 1}
+- **Patterns:** {existing patterns from Step 1}
+- **Constraints:** {limitations discovered}
+- **Dependencies:** {other issues or systems, or "none"}
+```
+
+If `needs-specify: false`, do NOT overwrite — the issue already has SDD-compliant content.
 
 ### Step 5 — Write `00-task-intake.md`
 
@@ -263,7 +287,7 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
 **Agents:** `tester` + `qa` (validate mode) — **launched in parallel**
 
 Launch both agents simultaneously using two Task tool calls in the same message:
-- **tester**: feature name, list of files created/modified (from implementer's status block summary), Hot Context from `00-state.md`
+- **tester**: feature name, list of files created/modified (from implementer's status block summary), **acceptance criteria from `00-task-intake.md`** (the tester must map each AC to at least one test), Hot Context from `00-state.md`
 - **qa** (validate mode): feature name, summary of what was implemented (from implementer's status block summary)
 
 **Gate (status-block):** Both agents return compact status blocks. Read both:
@@ -407,8 +431,30 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
 3. **Design (planning mode)** — invoke `architect` in planning mode. Architect produces task breakdown in `01-planning.md` (not an architecture proposal). Task sizing is the architect's responsibility.
 4. **Validate sizing** — read `01-planning.md`. If any task has >20 AC or looks like a full feature, re-invoke architect to split. Max 1 retry.
 5. **Create tasks** — check `gh auth status`:
-   - **gh available:** create one GitHub issue per task via `gh issue create` with description, AC, technical context, group, complexity. Use task label + group as labels. Comment on parent issue with breakdown list.
-   - **gh unavailable:** write each task as a markdown file in `session-docs/{feature-name}/tasks/` with an index file.
+   - **gh available:** create one GitHub issue per task via `gh issue create` using the **SDD issue template**. Use task label + group as labels. Comment on parent issue with breakdown list.
+   - **gh unavailable:** write each task as a markdown file in `session-docs/{feature-name}/tasks/` using the same SDD template.
+
+   **SDD Issue Template** (mandatory for all created issues):
+   ```markdown
+   ## User Story
+   As a {role}, I want {action}, so that {benefit}.
+
+   ## Acceptance Criteria
+   - [ ] **AC-1:** Given {context}, When {action}, Then {result}
+   - [ ] **AC-2:** Given {context}, When {action}, Then {result}
+
+   ## Scope
+   **Included:** {what's in scope}
+   **Excluded:** {what's explicitly out}
+
+   ## Technical Context
+   - **Files:** {affected files/components}
+   - **Patterns:** {existing patterns to follow}
+   - **Constraints:** {technical limitations}
+   - **Dependencies:** {other tasks in this breakdown, or "none"}
+   ```
+
+   **Rules:** min 2 AC, max 20 (if >20, task is too large — split it). AC always Given/When/Then with checkbox. Populate Technical Context from `01-planning.md` (files affected, architecture guidance). Dependencies reference other tasks in the breakdown by title.
 6. **Report** created tasks to user.
 
 **Mode: `plan`** → STOP after reporting.
@@ -471,7 +517,7 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | Mode | Agent | Prerequisites | Flow |
 |------|-------|--------------|------|
 | research | `architect` (research mode) | none | create session-docs → invoke → present `00-research.md` |
-| review | `architect` + `reviewer` + `qa` | PR metadata from skill | AC generation → parallel review+validate → consolidate → user approval → publish |
+| review | `reviewer` | PR metadata + diff from skill | invoke reviewer → build draft → return to skill |
 | init | `init` | none | invoke → report generated files |
 | design | `architect` (design mode) | none | intake + specify → invoke → present `01-architecture.md` |
 | test | `tester` | `02-implementation.md` | invoke → report results |
@@ -483,95 +529,56 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 
 When invoked with `Direct Mode Task: review`:
 
-#### Step 1 — Fetch PR context
+The `/review-pr` skill handles ALL Bash (fetching PR metadata, git diff, etc.) and passes everything inline. The orchestrator and reviewer do ZERO Bash.
 
-The `/review-pr` skill already passed the PR metadata. Extract:
-- PR number, title, body, base/head branches, additions/deletions
-- Linked issue number, title, body, labels (if detected by the skill)
+#### Step 1 — Receive pre-fetched data
 
-If the skill didn't detect a linked issue but the PR body references one (e.g., "Closes #123", "Fixes #123"), fetch it:
+The skill already passed all data inline. Extract:
+- PR number, title, body, author, base/head branches, additions/deletions, URL
+- Linked issue (number, title, body, labels) or "none"
+- Changed files list
+- Full diff (may be truncated if >3000 lines)
+
+Zero Bash in this step.
+
+#### Step 2 — Invoke reviewer
+
+Invoke `reviewer` in **data-provided mode** via Task tool, passing ALL data inline:
+
 ```
-gh issue view {number} --json body,title,labels
-```
-
-#### Step 2 — Generate AC
-
-Invoke `architect` in **pr-analysis mode** via Task tool, passing:
-- PR title, body, linked issue body (if available), and diff file list
-- Instruct: "pr-analysis mode — generate testable acceptance criteria from this PR/issue context"
-
-The architect returns an AC list in its status block. Extract the `ac_list` for use in Step 3.
-
-Note: session-docs are ephemeral and won't exist at review time, so AC are always generated fresh from the PR/issue context.
-
-#### Step 3 — Parallel analysis
-
-Launch in parallel (two Task tool calls in the same message):
-- **`reviewer`** with `orchestrated: true` — code quality analysis. Pass PR metadata (number, base, head branches). The reviewer writes findings to `.claude/pr-review-findings.md` and returns a status block.
-- **`qa`** in **validate-pr mode** — validates AC against PR diff. Pass the AC list from Step 2, PR base/head branches. The QA returns AC validation results in its status block.
-
-#### Step 4 — Consolidate review
-
-Read `.claude/pr-review-findings.md` (reviewer findings) and QA's status block (AC results). Build a consolidated review:
-
-```markdown
-## Code Review
-
-**Result:** APPROVED / CHANGES REQUESTED
-**PR:** #{number} — {title}
-**Author:** {author}
-**Files reviewed:** {N}
-**Additions:** +{N} | **Deletions:** -{N}
-
-### Acceptance Criteria
-| # | Criteria | Status | Evidence |
-|---|----------|--------|----------|
-| AC-1 | Given X, When Y, Then Z | PASS/FAIL | `file:line` |
-| AC-2 | Given X, When Y, Then Z | PASS/FAIL | `file:line` |
-
-{if any FAIL: "**{N} acceptance criteria failed** — see details above"}
-
-### Critical Issues
-- `file.ts:42` — {description and suggested fix}
-
-### Suggestions
-- `file.ts:15` — {description}
-
-### Nitpicks
-- `file.ts:8` — {description}
-
-### Summary
-{1-2 sentences overall assessment}
+mode: data-provided
+PR: #{number}
+Title: {title}
+Author: {author}
+Base: {base}
+Head: {head}
+Additions: +{N}
+Deletions: -{N}
+URL: {url}
+Body: {body}
+Linked Issue: #{issue_number} or "none"
+Issue Title: {title} or "N/A"
+Issue Body: {body} or "N/A"
+Issue Labels: {labels} or "N/A"
+Changed Files:
+{file list}
+Full Diff:
+{diff}
 ```
 
-Omit any section with no findings.
+The reviewer operates in data-provided mode (zero Bash), analyzes the code, and returns a status block with `review_body` inline and `decision` (APPROVE or CHANGES_REQUESTED).
 
-**Decision logic:**
-- 0 critical code issues AND 0 failed AC → suggest **APPROVE**
-- 1+ critical code issues OR 1+ failed AC → suggest **CHANGES REQUESTED**
+#### Step 3 — Build draft
 
-#### Step 5 — Present draft to user
+Take the `review_body` from the reviewer's status block and write it to `.claude/pr-review-draft.md` using the Write tool.
 
-Write consolidated review to `.claude/pr-review-draft.md`. Show the draft to the user and ask: "Review draft ready. Approve to publish, or tell me what to change."
+Return to the skill with the decision:
+```
+Review draft written to .claude/pr-review-draft.md
+Decision: {APPROVE or CHANGES_REQUESTED}
+```
 
-#### Step 6 — Publish or edit
-
-- **User approves**: determine approve/request-changes based on decision logic (user can override), then publish:
-  ```
-  gh pr review {number} --approve -F .claude/pr-review-draft.md
-  ```
-  or:
-  ```
-  gh pr review {number} --request-changes -F .claude/pr-review-draft.md
-  ```
-
-- **User requests edits**: modify the draft per user's feedback, show again, repeat until approved.
-
-- **User wants to re-review**: re-run the full flow from Step 1.
-
-#### Cleanup
-
-After publishing, delete temporary files: `.claude/pr-review-findings.md`, `.claude/pr-review-draft.md`.
+The skill handles user approval and publishing — the orchestrator does NOT publish or ask the user.
 
 ---
 

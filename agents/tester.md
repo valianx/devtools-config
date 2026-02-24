@@ -49,23 +49,31 @@ Before writing any test:
 
 ---
 
-## Phase 1 — Test Plan (Change-Driven)
+## Phase 1 — Test Plan (Spec-Driven + Change-Ordered)
 
-Identify what changed and build the test plan around those changes. **Tests MUST be ordered by the changes made — this is mandatory, not optional.**
+Tests verify the **acceptance criteria** from the spec. They are **ordered by the changed files** for dependency correctness.
 
-1. **Map the changes** — read session-docs and git diff to determine what was modified. List every file, service, component, or endpoint that was added or changed.
-2. **Order by dependency** — start from the lowest-level changes (utilities, repositories, factories) up to the highest (controllers, pages, orchestrators). **Write tests in this exact order.** Each test file corresponds to a changed file.
-3. **For each changed unit, define:**
+1. **Read the spec** — read `session-docs/{feature-name}/00-task-intake.md` (or AC passed by the orchestrator). Extract the full list of acceptance criteria.
+2. **Map the changes** — read session-docs and git diff to determine what was modified. List every file, service, component, or endpoint that was added or changed.
+3. **AC Coverage Mapping** — for each acceptance criterion, identify which changed file(s) implement it and which test(s) will verify it. Every AC must map to at least one test. If an AC cannot be mapped to a test, flag it.
+4. **Order by dependency** — start from the lowest-level changes (utilities, repositories, factories) up to the highest (controllers, pages, orchestrators). **Write tests in this exact order.** Each test file corresponds to a changed file.
+5. **For each changed unit, define:**
+   - Which AC it satisfies (reference by AC number)
    - Scenarios to test (happy path, error cases, edge cases)
    - Test type (unit, integration, e2e)
    - Dependencies to mock (via factories)
    - Data fixtures needed
-4. **Present the ordered test plan to the user** before writing any test. Example:
+6. **Present the ordered test plan to the user** before writing any test. Example:
    ```
+   AC Coverage:
+   - AC-1 (Given valid input...) → auth.service.spec.ts
+   - AC-2 (Given invalid token...) → auth.service.spec.ts, auth.controller.spec.ts
+   - AC-3 (Given admin role...) → auth.controller.spec.ts
+
    Test order:
    1. user.repository.spec.ts → tests for user.repository.ts
-   2. auth.service.spec.ts → tests for auth.service.ts (depends on user.repository)
-   3. auth.controller.spec.ts → tests for auth.controller.ts (depends on auth.service)
+   2. auth.service.spec.ts → tests for auth.service.ts (AC-1, AC-2)
+   3. auth.controller.spec.ts → tests for auth.controller.ts (AC-2, AC-3)
    ```
 
 ### Backend-specific scenarios *(backend/fullstack)*
@@ -183,6 +191,12 @@ Write your summary to `session-docs/{feature-name}/03-testing.md`:
 ## Test Strategy
 {Brief description of testing approach}
 
+## AC Coverage
+| AC | Description | Test File | Status |
+|----|-------------|-----------|--------|
+| AC-1 | {Given/When/Then summary} | {test file} | COVERED |
+| AC-2 | {Given/When/Then summary} | {test file} | COVERED |
+
 ## Tests Created
 | File | Tests | Coverage |
 |------|-------|----------|
@@ -207,6 +221,7 @@ Write your summary to `session-docs/{feature-name}/03-testing.md`:
 ## Quality Checklist
 
 Before finishing:
+- [ ] **Every AC has at least one test** — verify the AC Coverage Mapping from Phase 1 is satisfied
 - [ ] Tests run and pass
 - [ ] Clear failure messages that help diagnose issues
 - [ ] Both happy path and error scenarios covered
