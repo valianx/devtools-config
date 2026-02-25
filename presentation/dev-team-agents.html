@@ -343,66 +343,91 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
                     <div style="text-align: left;">
                         <h2>Agentes Especializados</h2>
-                        <h3 style="font-size: 0.9em; margin-bottom: 30px;">Cada uno cubre un rol vital</h3>
+                        <h3 style="font-size: 0.9em; margin-bottom: 30px;">8 agentes, cada uno cubre un rol vital</h3>
                         <div
                             style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; display: flex; justify-content: center; align-items: center;">
                             <img src="images/ecosystem_network.svg" alt="Agent Network"
                                 style="width: 100%; max-width: 300px; filter: drop-shadow(0 0 20px rgba(88,166,255,0.3));">
                         </div>
-                        <p class="text-sm" style="margin-top: 20px; text-align: center;">Trabajan en orquesación para
+                        <p class="text-sm" style="margin-top: 20px; text-align: center;">Trabajan en orquestación para
                             simular un equipo completo.</p>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
                         <div class="agent-chip"
-                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
-                            <div class="emoji" style="font-size: 1.8em; margin: 0;">📐</div>
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 10px 20px; border-color: rgba(88, 166, 255, 0.5);">
+                            <div class="emoji" style="font-size: 1.5em; margin: 0;">🎯</div>
+                            <div style="flex: 1;">
+                                <div class="name" style="color: var(--agent-orchestrator); font-size: 0.9em; margin: 0;">
+                                    dev-orchestrator</div>
+                                <div class="role" style="font-size: 0.6em;">Hub central, coordina todo el equipo</div>
+                            </div>
+                        </div>
+
+                        <div class="agent-chip"
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 10px 20px;">
+                            <div class="emoji" style="font-size: 1.5em; margin: 0;">📐</div>
                             <div style="flex: 1;">
                                 <div class="name" style="color: var(--agent-architect); font-size: 0.9em; margin: 0;">
                                     architect</div>
-                                <div class="role" style="font-size: 0.6em;">Diseña soluciones y evalúa riesgos de
-                                    seguridad</div>
+                                <div class="role" style="font-size: 0.6em;">Diseña arquitectura, investiga y planifica</div>
                             </div>
                         </div>
 
                         <div class="agent-chip"
-                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
-                            <div class="emoji" style="font-size: 1.8em; margin: 0;">💻</div>
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 10px 20px;">
+                            <div class="emoji" style="font-size: 1.5em; margin: 0;">💻</div>
                             <div style="flex: 1;">
                                 <div class="name" style="color: var(--agent-implementer); font-size: 0.9em; margin: 0;">
                                     implementer</div>
-                                <div class="role" style="font-size: 0.6em;">Escribe código limpio siguiendo patrones
-                                </div>
+                                <div class="role" style="font-size: 0.6em;">Escribe código de producción</div>
                             </div>
                         </div>
 
                         <div class="agent-chip"
-                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
-                            <div class="emoji" style="font-size: 1.8em; margin: 0;">🧪</div>
+                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 10px 20px;">
+                            <div class="emoji" style="font-size: 1.5em; margin: 0;">🧪</div>
                             <div style="flex: 1;">
                                 <div class="name" style="color: var(--agent-tester); font-size: 0.9em; margin: 0;">
                                     tester</div>
-                                <div class="role" style="font-size: 0.6em;">Crea tests unitarios y de integración</div>
+                                <div class="role" style="font-size: 0.6em;">Crea y ejecuta tests</div>
                             </div>
                         </div>
 
-                        <div class="agent-chip"
-                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
-                            <div class="emoji" style="font-size: 1.8em; margin: 0;">✅</div>
-                            <div style="flex: 1;">
-                                <div class="name" style="color: var(--agent-qa); font-size: 0.9em; margin: 0;">qa</div>
-                                <div class="role" style="font-size: 0.6em;">Valida calidad y cumplimiento de criterios
+                        <div style="display: flex; gap: 10px;">
+                            <div class="agent-chip"
+                                style="flex: 1; display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 16px;">
+                                <div class="emoji" style="font-size: 1.5em; margin: 0;">✅</div>
+                                <div style="flex: 1;">
+                                    <div class="name" style="color: var(--agent-qa); font-size: 0.8em; margin: 0;">qa</div>
+                                    <div class="role" style="font-size: 0.55em;">Valida criterios</div>
+                                </div>
+                            </div>
+                            <div class="agent-chip"
+                                style="flex: 1; display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 16px;">
+                                <div class="emoji" style="font-size: 1.5em; margin: 0;">📦</div>
+                                <div style="flex: 1;">
+                                    <div class="name" style="color: var(--agent-delivery); font-size: 0.8em; margin: 0;">delivery</div>
+                                    <div class="role" style="font-size: 0.55em;">Versiona y commitea</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="agent-chip"
-                            style="width: 100%; display: flex; align-items: center; gap: 20px; text-align: left; padding: 12px 20px;">
-                            <div class="emoji" style="font-size: 1.8em; margin: 0;">📦</div>
-                            <div style="flex: 1;">
-                                <div class="name" style="color: var(--agent-delivery); font-size: 0.9em; margin: 0;">
-                                    delivery</div>
-                                <div class="role" style="font-size: 0.6em;">Gestiona versiones, docs y Pull Requests
+                        <div style="display: flex; gap: 10px;">
+                            <div class="agent-chip"
+                                style="flex: 1; display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 16px;">
+                                <div class="emoji" style="font-size: 1.5em; margin: 0;">🔍</div>
+                                <div style="flex: 1;">
+                                    <div class="name" style="color: #f0883e; font-size: 0.8em; margin: 0;">reviewer</div>
+                                    <div class="role" style="font-size: 0.55em;">Revisa PRs</div>
+                                </div>
+                            </div>
+                            <div class="agent-chip"
+                                style="flex: 1; display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 16px;">
+                                <div class="emoji" style="font-size: 1.5em; margin: 0;">🚀</div>
+                                <div style="flex: 1;">
+                                    <div class="name" style="color: var(--agent-init); font-size: 0.8em; margin: 0;">init</div>
+                                    <div class="role" style="font-size: 0.55em;">Bootstrap repos</div>
                                 </div>
                             </div>
                         </div>
@@ -451,35 +476,56 @@
 
             <!-- 5. HOW IT WORKS -->
             <section>
-                <div>
-                    <h2>Workflow</h2>
-                    <h3>El dev invoca al agente que necesita</h3>
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 30px; align-items: start;">
+                    <div style="text-align: left;">
+                        <h2 style="font-size: 1.4em; text-align: left;">Pipeline</h2>
+                        <h3 style="font-size: 0.8em; text-align: left;">Un skill invoca al orchestrator, que coordina todo</h3>
+                        <div class="glass-card" style="padding: 14px; margin-top: 20px;">
+                            <p style="font-size: 0.6em; color: var(--text-muted); margin: 0 0 8px;">Entry points (skills):</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/issue</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/plan</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/design</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/test</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/validate</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/research</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/deliver</code>
+                                <code style="font-size: 0.55em; background: rgba(88,166,255,0.15); padding: 3px 8px; border-radius: 4px;">/review-pr</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flow-step" style="border-color: var(--agent-orchestrator); margin-top: 0;">
+                            <strong style="color: var(--agent-orchestrator); flex: 0 0 180px;">dev-orchestrator</strong>
+                            <span>Recibe el skill, coordina las fases</span>
+                        </div>
+                        <div class="flow-step" style="border-color: var(--agent-qa);">
+                            <strong style="color: var(--agent-qa); flex: 0 0 180px;">Phase 0 · qa</strong>
+                            <span>Define criterios de aceptación (AC)</span>
+                        </div>
+                        <div class="flow-step" style="border-color: var(--agent-architect);">
+                            <strong style="color: var(--agent-architect); flex: 0 0 180px;">Phase 1 · architect</strong>
+                            <span>Diseña la solución técnica</span>
+                        </div>
+                        <div class="flow-step" style="border-color: var(--agent-implementer);">
+                            <strong style="color: var(--agent-implementer); flex: 0 0 180px;">Phase 2 · implementer</strong>
+                            <span>Escribe el código de producción</span>
+                        </div>
+                        <div class="flow-step" style="border-color: var(--accent-secondary); background: rgba(139, 92, 246, 0.08);">
+                            <strong style="color: var(--accent-secondary); flex: 0 0 180px;">Phase 3 · verify</strong>
+                            <span><strong style="color: var(--agent-tester);">tester</strong> + <strong style="color: var(--agent-qa);">qa</strong> en paralelo (max 3 loops)</span>
+                        </div>
+                        <div class="flow-step" style="border-color: var(--agent-delivery);">
+                            <strong style="color: var(--agent-delivery); flex: 0 0 180px;">Phase 4 · delivery</strong>
+                            <span>Branch, SemVer, commit, PR</span>
+                        </div>
+                    </div>
                 </div>
-                <div style="margin-top: 30px;">
-                    <div class="flow-step" style="border-color: var(--agent-architect);">
-                        <strong style="color: var(--agent-architect);">architect</strong>
-                        <span>"Diseña la solución para este feature..."</span>
-                    </div>
-                    <div class="flow-step" style="border-color: var(--agent-implementer);">
-                        <strong style="color: var(--agent-implementer);">implementer</strong>
-                        <span>"Implementa según el diseño..."</span>
-                    </div>
-                    <div class="flow-step" style="border-color: var(--agent-tester);">
-                        <strong style="color: var(--agent-tester);">tester</strong>
-                        <span>"Crea tests para lo implementado..."</span>
-                    </div>
-                    <div class="flow-step" style="border-color: var(--agent-qa);">
-                        <strong style="color: var(--agent-qa);">qa</strong>
-                        <span>"Valida que cumple los criterios..."</span>
-                    </div>
-                    <div class="flow-step" style="border-color: var(--agent-delivery);">
-                        <strong style="color: var(--agent-delivery);">delivery</strong>
-                        <span>"Empaqueta, versiona y abre PR..."</span>
-                    </div>
-                </div>
-                <div style="margin-top: 15px; opacity: 0.7; font-size: 0.5em; color: var(--text-muted);">
-                    <i class="fa-solid fa-folder-open"></i> Trazabilidad total automática en folder
-                    <code>session-docs/</code>
+                <div style="margin-top: 12px; opacity: 0.7; font-size: 0.5em; color: var(--text-muted);">
+                    <i class="fa-solid fa-folder-open"></i> Trazabilidad automática en <code>session-docs/</code>
+                    &nbsp;&nbsp;·&nbsp;&nbsp;
+                    <i class="fa-solid fa-rotate"></i> Si verify falla, vuelve a implementer automáticamente
                 </div>
             </section>
 
@@ -487,49 +533,66 @@
             <section>
                 <h2>Contexto Multi-Agente</h2>
                 <h3>Cada agente tiene su propia ventana de contexto</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; margin-top: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; margin-top: 15px;">
                     <div style="text-align: left;">
-                        <div class="glass-card" style="padding: 20px; margin-bottom: 15px;">
-                            <h4 style="color: var(--accent-danger); font-size: 0.8em; margin-bottom: 10px;">
+                        <div class="glass-card" style="padding: 16px; margin-bottom: 12px;">
+                            <h4 style="color: var(--accent-danger); font-size: 0.8em; margin-bottom: 8px;">
                                 <i class="fa-solid fa-window-maximize"></i> Contexto aislado
                             </h4>
-                            <p style="font-size: 0.6em; line-height: 1.6; color: var(--text-main); margin: 0;">
-                                Cada agente inicia con su <strong>propia ventana de contexto</strong> — no comparte memoria con los demás. Al terminar, su contexto se descarta.
+                            <p style="font-size: 0.6em; line-height: 1.5; color: var(--text-main); margin: 0;">
+                                Cada agente inicia con su <strong>propia ventana</strong> — no comparte memoria con los demás. Al terminar, su contexto se descarta.
                             </p>
                         </div>
-                        <div class="glass-card" style="padding: 20px;">
-                            <h4 style="color: var(--accent-success); font-size: 0.8em; margin-bottom: 10px;">
+                        <div class="glass-card" style="padding: 16px; margin-bottom: 12px;">
+                            <h4 style="color: var(--accent-success); font-size: 0.8em; margin-bottom: 8px;">
                                 <i class="fa-solid fa-file-lines"></i> Persistencia en archivos
                             </h4>
-                            <p style="font-size: 0.6em; line-height: 1.6; color: var(--text-main); margin: 0;">
-                                Antes de terminar, cada agente <strong>documenta sus resultados</strong> en un <code>.md</code>. El siguiente agente lo lee al iniciar y recupera el contexto.
+                            <p style="font-size: 0.6em; line-height: 1.5; color: var(--text-main); margin: 0;">
+                                Cada agente <strong>documenta sus resultados</strong> en un <code>.md</code>. El siguiente lo lee al iniciar y recupera el contexto.
+                            </p>
+                        </div>
+                        <div class="glass-card" style="padding: 16px;">
+                            <h4 style="color: var(--agent-orchestrator); font-size: 0.8em; margin-bottom: 8px;">
+                                <i class="fa-solid fa-bookmark"></i> Checkpointing
+                            </h4>
+                            <p style="font-size: 0.6em; line-height: 1.5; color: var(--text-main); margin: 0;">
+                                El orchestrator mantiene <strong>state + execution log</strong> para recovery y trazabilidad entre fases.
                             </p>
                         </div>
                     </div>
                     <div>
-                        <div style="display: grid; grid-template-columns: 190px 30px 1fr; row-gap: 5px; column-gap: 15px; align-items: center; text-align: left;">
-                            <strong style="color: var(--agent-architect); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-architect); border-radius: 0 8px 8px 0;">architect</strong>
-                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
-                            <code style="font-size: 0.6em;">01-architecture.md</code>
+                        <p style="font-size: 0.55em; color: var(--text-muted); margin: 0 0 8px 16px;">Archivos compartidos (orchestrator)</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-bottom: 12px;">
+                            <code style="font-size: 0.55em; padding: 5px 12px; background: rgba(88,166,255,0.1); border-left: 3px solid var(--agent-orchestrator); border-radius: 0 6px 6px 0;">00-state.md</code>
+                            <code style="font-size: 0.55em; padding: 5px 12px; background: rgba(88,166,255,0.1); border-left: 3px solid var(--agent-orchestrator); border-radius: 0 6px 6px 0;">00-execution-log.md</code>
+                            <code style="font-size: 0.55em; padding: 5px 12px; background: rgba(88,166,255,0.1); border-left: 3px solid var(--agent-orchestrator); border-radius: 0 6px 6px 0;">00-task-intake.md</code>
+                            <code style="font-size: 0.55em; padding: 5px 12px; background: rgba(88,166,255,0.1); border-left: 3px solid var(--agent-orchestrator); border-radius: 0 6px 6px 0;">00-acceptance-criteria.md</code>
+                        </div>
 
-                            <strong style="color: var(--agent-implementer); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-implementer); border-radius: 0 8px 8px 0;">implementer</strong>
-                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
-                            <code style="font-size: 0.6em;">02-implementation.md</code>
+                        <p style="font-size: 0.55em; color: var(--text-muted); margin: 0 0 8px 16px;">Archivos por agente</p>
+                        <div style="display: grid; grid-template-columns: 140px 20px 1fr; row-gap: 4px; column-gap: 10px; align-items: center; text-align: left;">
+                            <strong style="color: var(--agent-architect); font-family: 'Consolas', monospace; font-size: 0.6em; padding: 5px 0 5px 12px; background: rgba(22,27,34,0.4); border-left: 3px solid var(--agent-architect); border-radius: 0 6px 6px 0;">architect</strong>
+                            <span style="opacity: 0.5; text-align: center; font-size: 0.6em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.55em;">01-architecture.md</code>
 
-                            <strong style="color: var(--agent-tester); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-tester); border-radius: 0 8px 8px 0;">tester</strong>
-                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
-                            <code style="font-size: 0.6em;">03-testing.md</code>
+                            <strong style="color: var(--agent-implementer); font-family: 'Consolas', monospace; font-size: 0.6em; padding: 5px 0 5px 12px; background: rgba(22,27,34,0.4); border-left: 3px solid var(--agent-implementer); border-radius: 0 6px 6px 0;">implementer</strong>
+                            <span style="opacity: 0.5; text-align: center; font-size: 0.6em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.55em;">02-implementation.md</code>
 
-                            <strong style="color: var(--agent-qa); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-qa); border-radius: 0 8px 8px 0;">qa</strong>
-                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
-                            <code style="font-size: 0.6em;">04-validation.md</code>
+                            <strong style="color: var(--agent-tester); font-family: 'Consolas', monospace; font-size: 0.6em; padding: 5px 0 5px 12px; background: rgba(22,27,34,0.4); border-left: 3px solid var(--agent-tester); border-radius: 0 6px 6px 0;">tester</strong>
+                            <span style="opacity: 0.5; text-align: center; font-size: 0.6em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.55em;">03-testing.md</code>
 
-                            <strong style="color: var(--agent-delivery); font-family: 'Consolas', monospace; font-size: 0.65em; padding: 8px 0 8px 16px; background: rgba(22,27,34,0.4); border-left: 4px solid var(--agent-delivery); border-radius: 0 8px 8px 0;">delivery</strong>
-                            <span style="opacity: 0.7; text-align: center; font-size: 0.65em;"><i class="fa-solid fa-arrow-right"></i></span>
-                            <code style="font-size: 0.6em;">05-delivery.md</code>
+                            <strong style="color: var(--agent-qa); font-family: 'Consolas', monospace; font-size: 0.6em; padding: 5px 0 5px 12px; background: rgba(22,27,34,0.4); border-left: 3px solid var(--agent-qa); border-radius: 0 6px 6px 0;">qa</strong>
+                            <span style="opacity: 0.5; text-align: center; font-size: 0.6em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.55em;">04-validation.md</code>
+
+                            <strong style="color: var(--agent-delivery); font-family: 'Consolas', monospace; font-size: 0.6em; padding: 5px 0 5px 12px; background: rgba(22,27,34,0.4); border-left: 3px solid var(--agent-delivery); border-radius: 0 6px 6px 0;">delivery</strong>
+                            <span style="opacity: 0.5; text-align: center; font-size: 0.6em;"><i class="fa-solid fa-arrow-right"></i></span>
+                            <code style="font-size: 0.55em;">05-delivery.md</code>
                         </div>
                         <div style="margin-top: 10px; text-align: center; font-size: 0.5em; color: var(--text-muted);">
-                            <i class="fa-solid fa-folder-open"></i> Todo queda en <code>session-docs/{feature}/</code>
+                            <i class="fa-solid fa-folder-open"></i> Todo en <code>session-docs/{feature}/</code>
                         </div>
                     </div>
                 </div>
@@ -538,21 +601,21 @@
             <!-- 7. ADOPTION  -->
             <section>
                 <h2>Plan de Adopción</h2>
-                <div class="card-container" style="align-items: stretch;">
+                <div class="card-container" style="align-items: stretch; margin-top: 30px;">
                     <div class="glass-card feature-card roadmap-card">
                         <div class="roadmap-step" style="color: var(--agent-init);">1</div>
                         <h4 style="margin-top: 25px;">Setup</h4>
-                        <p><strong>init</strong> configura cada proyecto automáticamente con las reglas base.</p>
+                        <p><code>/init</code> configura cada proyecto automáticamente con CLAUDE.md y reglas base.</p>
                     </div>
                     <div class="glass-card feature-card roadmap-card">
                         <div class="roadmap-step" style="color: var(--agent-tester);">2</div>
-                        <h4 style="margin-top: 25px;">Individual</h4>
-                        <p>Cada dev usa los agentes manualmente (CLI) según su necesidad inmediata.</p>
+                        <h4 style="margin-top: 25px;">Skills individuales</h4>
+                        <p>Cada dev usa skills (<code>/test</code>, <code>/design</code>, <code>/validate</code>) según su necesidad.</p>
                     </div>
                     <div class="glass-card feature-card roadmap-card">
                         <div class="roadmap-step" style="color: var(--agent-orchestrator);">3</div>
-                        <h4 style="margin-top: 25px;">Orquestación</h4>
-                        <p><strong>orchestrator</strong> coordina todo el pipeline complejo con un solo comando.</p>
+                        <h4 style="margin-top: 25px;">Pipeline completo</h4>
+                        <p><code>/issue</code> ejecuta el pipeline de punta a punta con un solo comando.</p>
                     </div>
                 </div>
             </section>
