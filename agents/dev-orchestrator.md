@@ -576,6 +576,10 @@ The reviewer operates in data-provided mode (zero Bash), analyzes the code, and 
 
 Take the `review_body` from the reviewer's status block and write it to `.claude/pr-review-draft.md` using the Write tool.
 
+**Validation:** If the reviewer's status block does not contain `review_body` or it's empty, re-invoke the reviewer once with the same data. If it fails again, return `status: failed` to the skill with an explanation.
+
+**After writing the draft,** read `.claude/pr-review-draft.md` back to confirm it was written correctly and is not empty.
+
 Return to the skill with the decision:
 ```
 Review draft written to .claude/pr-review-draft.md

@@ -63,11 +63,16 @@ Analyze the input: $ARGUMENTS
 
 ### Phase 3 — Publish (Bash in main context)
 
-9. Read `.claude/pr-review-draft.md` and display the full review draft to the user.
+9. **Verify the draft exists.** Check that `.claude/pr-review-draft.md` was created and is not empty. If it's missing or empty:
+   - Tell the user: "El orchestrator no generó el borrador de revisión. Reintentando..."
+   - Re-invoke the orchestrator with the same data (go back to step 7)
+   - If it fails a second time, report the error and stop
 
-10. Ask the user: "Borrador de revisión listo. Aprueba para publicar, o dime qué cambiar."
+10. Read `.claude/pr-review-draft.md` and display the full review draft to the user.
 
-11. Based on user response:
+11. Ask the user: "Borrador de revisión listo. Aprueba para publicar, o dime qué cambiar."
+
+12. Based on user response:
     - **User approves**: publish using the decision from the orchestrator (user can override):
       ```
       gh pr review {number} --approve -F .claude/pr-review-draft.md
@@ -78,7 +83,9 @@ Analyze the input: $ARGUMENTS
       ```
     - **User requests edits**: modify the draft per feedback, show again, repeat until approved.
 
-12. Cleanup: delete `.claude/pr-review-draft.md` after publishing.
+13. **Verify the review was posted.** After `gh pr review`, check the exit code. If it failed, report the error to the user with the exact error message.
+
+14. Cleanup: delete `.claude/pr-review-draft.md` after successful publishing.
 
 ---
 
