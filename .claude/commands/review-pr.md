@@ -65,7 +65,7 @@ Analyze the input: $ARGUMENTS
 
 9. Read `.claude/pr-review-draft.md` and display the full review draft to the user.
 
-10. Ask the user: "Review draft ready. Approve to publish, or tell me what to change."
+10. Ask the user: "Borrador de revisión listo. Aprueba para publicar, o dime qué cambiar."
 
 11. Based on user response:
     - **User approves**: publish using the decision from the orchestrator (user can override):
@@ -84,7 +84,7 @@ Analyze the input: $ARGUMENTS
 
 ## Mode 2 — No input provided
 
-Ask the user: "Provide a PR number or URL to review. Example: `#45`, `45`, or `https://github.com/owner/repo/pull/45`."
+Ask the user: "Proporciona un número de PR o URL para revisar. Ejemplo: `#45`, `45`, o `https://github.com/owner/repo/pull/45`."
 
 ---
 
