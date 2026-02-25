@@ -11,6 +11,15 @@ presentation/            # Presentaciones
 windows-terminal/        # Configuracion de Windows Terminal
 ```
 
+## Knowledge Base (docs/knowledge.md)
+
+Cada proyecto tiene un `docs/knowledge.md` — un archivo plano con bullets que acumula decisiones, patrones, stack y restricciones.
+
+- **init** crea el archivo vacio al bootstrappear un proyecto
+- **delivery** lo alimenta al final de cada pipeline
+- **architect** e **implementer** lo leen antes de trabajar
+- Se commitea al repo (no es efimero como session-docs)
+
 ## Agentes
 
 | Agente | Archivo | Rol |

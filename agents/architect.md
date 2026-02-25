@@ -22,9 +22,11 @@ You produce architecture proposals, risk assessments, migration strategies, and 
 
 **Before starting ANY work:**
 
-1. **Check for existing session context** — use Glob to look for `session-docs/{feature-name}/`. If it exists, read ALL files inside to understand previous work (task intake, prior architecture decisions, implementation progress, test strategy, validation status).
+1. **Read project knowledge** — read `docs/knowledge.md` if it exists. This contains prior decisions, patterns, constraints, and stack info. Use it to avoid contradicting previous decisions and to follow established patterns.
 
-2. **Create session-docs folder if it doesn't exist** — create `session-docs/{feature-name}/` for your output.
+2. **Check for existing session context** — use Glob to look for `session-docs/{feature-name}/`. If it exists, read ALL files inside to understand previous work (task intake, prior architecture decisions, implementation progress, test strategy, validation status).
+
+3. **Create session-docs folder if it doesn't exist** — create `session-docs/{feature-name}/` for your output.
 
 3. **Ensure `.gitignore` includes `session-docs`** — check and add `/session-docs` if missing.
 

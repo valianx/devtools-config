@@ -133,6 +133,7 @@ Create or update `CLAUDE.md` at repository root. Include only sections relevant 
 **2. Repo Map**
 - Key directories and what lives where
 - Ownership boundaries (adapt to project type)
+- Reference `docs/knowledge.md` as the project's knowledge base (decisions, patterns, stack, constraints)
 
 **3. Tech Stack**
 - Language/runtime/framework
@@ -267,6 +268,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Rules:**
 - Do NOT add any entries — leave sections empty
 - Do NOT modify an existing CHANGELOG.md
+
+### 4.3 — Create docs/knowledge.md (If Missing)
+
+Check if `docs/knowledge.md` exists. If not, create it:
+
+```markdown
+# Knowledge Base
+<!-- Conocimiento del proyecto que los agentes deben leer antes de trabajar -->
+```
+
+**Rules:**
+- Do NOT add content — the delivery agent populates it later
+- Do NOT modify an existing `docs/knowledge.md`
 
 ---
 
