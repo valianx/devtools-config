@@ -431,7 +431,11 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
 3. **Design (planning mode)** — invoke `architect` in planning mode. Architect produces task breakdown in `01-planning.md` (not an architecture proposal). Task sizing is the architect's responsibility.
 4. **Validate sizing** — read `01-planning.md`. If any task has >20 AC or looks like a full feature, re-invoke architect to split. Max 1 retry.
 5. **Create tasks** — check `gh auth status`:
-   - **gh available:** create one GitHub issue per task via `gh issue create` using the **SDD issue template**. Use task label + group as labels. Comment on parent issue with breakdown list.
+   - **gh available:** create one GitHub issue per task via `gh issue create` using the **SDD issue template**:
+     - **Labels:** detect available labels from the repo (`gh label list --json name -q '.[].name'`). Assign the appropriate type label (e.g., `bug`, `feature`, `enhancement`) plus any group/component labels. Never invent labels — only use existing ones.
+     - **Assignee:** always `--assignee @me`
+     - **Project board:** detect the repo's project (`gh project list --format json | head -1`). If a project exists, add the issue to it.
+     - Comment on parent issue with breakdown list.
    - **gh unavailable:** write each task as a markdown file in `session-docs/{feature-name}/tasks/` using the same SDD template.
 
    **SDD Issue Template** (mandatory for all created issues):

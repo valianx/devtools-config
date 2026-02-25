@@ -56,9 +56,17 @@ Determine `{feature_name}` in this order:
 
 ### Step 2 — Detect GitHub issue
 
-Check `session-docs/{feature-name}/00-task-intake.md` for a `## GitHub Issue` section. If found, extract the **issue number**. You will use it to:
+Check `session-docs/{feature-name}/00-task-intake.md` for a `## GitHub Issue` section. If found, extract the **issue number** and fetch its metadata:
+
+```
+gh issue view {number} --json number,title,labels,assignees,projectItems
+```
+
+You will use this to:
 - Include it in the branch name (Step 3)
-- Link the PR to the issue (Step 11)
+- Link the PR to the issue with `Closes #{number}` (Step 11)
+- Inherit labels from the issue to the PR (Step 11)
+- Associate the PR with the same project board (Step 11)
 
 If no GitHub issue section exists, proceed without — this is not an error.
 
@@ -250,11 +258,26 @@ Do NOT stage unrelated files.
 
 ### Step 11 — Create Pull Request
 
-**Always create a PR targeting `main`.** If a GitHub issue was detected in Step 2, link it using `Closes #{number}`.
+**Always create a PR targeting `main`.**
+
+**Step 11.1 — Gather PR metadata:**
+
+1. **Labels:** If a GitHub issue was detected in Step 2, read its labels: `gh issue view {number} --json labels -q '.labels[].name'`. Use those same labels on the PR. If no issue, detect the type from the feature context and use matching labels from the repo (`gh label list --json name -q '.[].name'`).
+
+2. **Project board:** Detect the repo's project board: `gh project list --format json | head -1`. Extract the project number. If no project exists, skip.
+
+3. **Assignee:** The PR author is always the current user (`@me`).
+
+**Step 11.2 — Create the PR:**
 
 ```
-gh pr create --base main --title "{type}({feature_name}): {short summary}" --body "$(cat <<'EOF'
-Closes #{number}   ← include only if GitHub issue was detected in Step 2
+gh pr create --base main \
+  --title "{type}({feature_name}): {short summary}" \
+  --assignee @me \
+  --label "{label1},{label2}" \
+  --project "{project-number}" \
+  --body "$(cat <<'EOF'
+Closes #{number}
 
 ## Summary
 - {bullet points of what was done}
@@ -271,9 +294,13 @@ EOF
 )"
 ```
 
+**Rules:**
+- `Closes #{number}` is **mandatory** when a GitHub issue exists — never omit it
+- `--label` uses labels from the linked issue. If no issue, infer from context (e.g., `bug`, `feature`, `enhancement`)
+- `--project` uses the repo's project board number. Omit flag if no project exists
+- `--assignee @me` always
 - Base branch is always `main`
 - Title follows conventional commits format
-- `Closes #{number}` links the PR to the issue — GitHub will auto-close the issue when the PR is merged
 - If PR creation fails (e.g., no remote, no gh), report to the user
 
 ---
