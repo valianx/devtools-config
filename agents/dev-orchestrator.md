@@ -39,6 +39,7 @@ session-docs/{feature-name}/
   02-implementation.md     ← implementer
   03-testing.md            ← tester
   04-validation.md         ← qa
+  04-security.md           ← security (only if security-sensitive)
   05-delivery.md           ← delivery
 ```
 
@@ -120,9 +121,14 @@ If no GitHub data is present (plain text task from user), proceed normally witho
 ## Pipeline Flow
 
 ```
-0a Intake → 0b Specify → 1 Design → 2 Implement → 3 Verify (tester+qa parallel) → 4 Delivery → 5 GitHub
-                                          ↑                    │
-                                          └── fail: iterate ───┘  (max 3 loops)
+0a Intake → 0b Specify → 1 Design → 2 Implement → 3 Verify → 4 Delivery → 5 GitHub
+                                          ↑              │
+                                          └─ fail: iter ─┘  (max 3 loops)
+                                                   │
+                                               ┌─ tester ──┐
+                                               ├─ qa ──────┤ (parallel)
+                                               └─ security*┘
+                                               * only if security-sensitive
 ```
 
 Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1.
@@ -143,6 +149,15 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 4. **Classify:**
    - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research`
    - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
+   - **Security-sensitive:** `true` | `false` — set to `true` if ANY of these apply:
+     - Task touches authentication, authorization, or session management
+     - Task handles secrets, tokens, API keys, or credentials
+     - Task modifies API endpoints, middleware, or request validation
+     - Task changes database queries or ORM usage
+     - Task modifies CORS, CSP, security headers, or cookie config
+     - Task is classified as `complex`
+     - User explicitly requests security review
+     - GitHub issue has a `security` label
 5. **Bootstrap check** (development tasks only — skip for `research` and `plan`):
    - Verify these prerequisites exist: `CLAUDE.md`, `CHANGELOG.md`, `.gitignore` with `/session-docs` entry
    - If ANY is missing → invoke `init` agent via Task tool before continuing
@@ -285,29 +300,30 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
 
 ---
 
-## Phase 3 — Verify (Test + Validate in parallel)
+## Phase 3 — Verify (Test + Validate + Security in parallel)
 
-**Agents:** `tester` + `qa` (validate mode) — **launched in parallel**
+**Agents:** `tester` + `qa` (validate mode) + `security` (conditional) — **launched in parallel**
 
-Launch both agents simultaneously using two Task tool calls in the same message:
+Launch agents simultaneously using Task tool calls in the same message:
 - **tester**: feature name, list of files created/modified (from implementer's status block summary), **acceptance criteria from `00-task-intake.md`** (the tester must map each AC to at least one test), Hot Context from `00-state.md`
 - **qa** (validate mode): feature name, summary of what was implemented (from implementer's status block summary)
+- **security** (pipeline mode, **only if `security-sensitive: true`**): feature name, list of files created/modified, summary of what was implemented, Hot Context from `00-state.md`. Instruct: "This is pipeline mode — focus on the changed files and their security implications."
 
-**Gate (status-block):** Both agents return compact status blocks. Read both:
-- If both `status: success` → update `00-state.md`, proceed to Phase 4
-- If either `status: failed` → **ONLY THEN** read the failing agent's session-docs (`03-testing.md` and/or `04-validation.md`) to understand what went wrong
+**Gate (status-block):** All agents return compact status blocks. Read all:
+- If all `status: success` → update `00-state.md`, proceed to Phase 4
+- If any `status: failed` → **ONLY THEN** read the failing agent's session-docs (`03-testing.md`, `04-validation.md`, and/or `04-security.md`) to understand what went wrong
 
-**Do NOT read `03-testing.md` or `04-validation.md` on happy path.** Trust the status blocks.
+**Do NOT read session-docs on happy path.** Trust the status blocks.
 
 **Report to user:**
 ```
 ✓ Phase 3/5 — Verify — completed (or ITERATING)
-  tester: {status} | qa: {status}
+  tester: {status} | qa: {status} | security: {status or "skipped"}
   {summary from each status block}
 → Next: Phase 4 — Delivery (or: Iterating — implementer fixing N issues)
 ```
 
-### If either fails → ITERATE
+### If any agent fails → ITERATE
 
 Read the failing agent's session-docs to understand root cause. Then:
 
@@ -315,19 +331,27 @@ Read the failing agent's session-docs to understand root cause. Then:
 1. Merge all failures into a single brief for the implementer:
    - Failing test names and error messages (from `03-testing.md`)
    - Failed AC with file references (from `04-validation.md`)
+   - Security vulnerabilities with file:line and remediation (from `04-security.md`)
 2. Route to `implementer` with the merged brief + Hot Context
-3. After fix → **re-run both agents in parallel** (repeat Phase 3)
+3. After fix → **re-run all agents in parallel** (repeat Phase 3, including security if it was active)
 
 **Case B — Design issue** (architecture doesn't support a requirement):
 1. Route to `architect` with the failed criteria and why the design can't satisfy them
 2. After revised design → route to `implementer`
-3. After fix → **re-run both agents in parallel** (repeat Phase 3)
+3. After fix → **re-run all agents in parallel** (repeat Phase 3)
 
 **Case C — Criteria issue** (AC were wrong or incomplete):
 1. Adjust criteria in `00-task-intake.md`
-2. **Re-run both agents in parallel** (repeat Phase 3)
+2. **Re-run all agents in parallel** (repeat Phase 3)
 
-**Max 3 iterations.** Each round-trip (implementer fixes → tester+qa re-run) = 1 iteration. Update `00-state.md` iteration count at each loop. If exceeded, try an alternative approach or simplify scope. Escalate to user as last resort.
+**Case D — Security-only failures** (tests and QA pass, but security finds Critical/High issues):
+1. Extract security findings with file:line references and concrete remediations from `04-security.md`
+2. Route to `implementer` with the security brief + Hot Context
+3. After fix → **re-run security agent only** (tester+qa already passed; re-run them only if implementer changed test-relevant code)
+
+**Max 3 iterations.** Each round-trip (implementer fixes → agents re-run) = 1 iteration. Update `00-state.md` iteration count at each loop. If exceeded, try an alternative approach or simplify scope. Escalate to user as last resort.
+
+**Security gate:** If security reports only Medium/Low/Info findings (no Critical or High), those are included in the delivery report as warnings but do NOT block the pipeline.
 
 ---
 
@@ -406,9 +430,10 @@ When multiple tasks are received (batch from `/issue` or `/plan`), track state i
 
 ### Security-sensitive (extended)
 1. Design is mandatory with extended security analysis
-2. Testing must include security-focused tests
-3. Validation must include security checklist
-4. If any security risk is unresolved → document it in session-docs and proceed with delivery (no prod access, safe to continue)
+2. Phase 3 launches `security` agent in parallel with tester+qa (automatic — triggered by `security-sensitive: true` from Phase 0a)
+3. Critical/High findings block delivery → iterate with implementer (Case D)
+4. Medium/Low/Info findings are included as warnings in delivery report but do NOT block
+5. If any security risk is unresolved after max iterations → document it in `04-security.md` and proceed with delivery (no prod access, safe to continue)
 
 ### Database changes
 1. Design must include migration strategy
@@ -509,11 +534,12 @@ At the end of a successful orchestration, report to the user:
 3. **Files created/modified:** {list}
 4. **Tests:** {count passed}
 5. **Validation:** {PASS with criteria count}
-6. **Version:** {old → new}
-7. **Branch:** {branch name}
-8. **Commit:** {hash and message}
-9. **Session docs:** `session-docs/{feature-name}/` contains full audit trail
-10. **GitHub:** issue #{number} commented and moved to "In Review" (if applicable)
+6. **Security:** {PASS/WARN/FAIL — finding count by severity, or "skipped (not security-sensitive)"}
+7. **Version:** {old → new}
+8. **Branch:** {branch name}
+9. **Commit:** {hash and message}
+10. **Session docs:** `session-docs/{feature-name}/` contains full audit trail
+11. **GitHub:** issue #{number} commented and moved to "In Review" (if applicable)
 
 ---
 

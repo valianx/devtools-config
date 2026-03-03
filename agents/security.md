@@ -52,11 +52,12 @@ Targeted audit of a specific area (e.g., "audit authentication", "audit API endp
 
 ### Pipeline Mode
 
-Invoked as part of the main pipeline after implementation, to verify no security regressions were introduced.
+Invoked as part of the main pipeline after implementation, to verify no security regressions were introduced. **Scoped strictly to changed files only.**
 
-- **Trigger:** orchestrator invokes for a specific feature, passing `00-task-intake.md` context
+- **Trigger:** orchestrator invokes for a specific feature, passing `00-task-intake.md` context and list of changed files
 - **Output:** `session-docs/{feature-name}/04-security.md`
-- **Flow:** Phase 0 → Phase 1 (only changed files) → Phase 2 (full checklist) → Phase 4 (report)
+- **Flow:** Phase 0 → Phase 1 (only changed files) → Phase 2 (only changed files) → Phase 4 (report)
+- **Scope rule:** In pipeline mode, ONLY analyze files listed as created/modified by the implementer. Do NOT scan global config, dependencies, or other files unless they were explicitly changed. This keeps the audit fast and focused on regressions introduced by the current feature.
 
 ---
 
