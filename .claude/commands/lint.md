@@ -1,4 +1,4 @@
-Validate the health of agents and skills in this dev-team system. Run all 3 checks below **in sequence**, then show the consolidated report.
+Validate the health of agents and skills in this dev-team system. Run all 4 checks below **in sequence**, then show the consolidated report.
 
 **IMPORTANT:** This skill runs directly — do NOT invoke the `dev-orchestrator` agent or any other agent. Execute all checks yourself using the tools available to you (Bash, Glob, Read, Grep).
 
@@ -61,6 +61,23 @@ Result:
 
 ---
 
+## Check 4 — Guardrails validation
+
+For each `.md` file in `agents/`:
+
+1. **Skip** `dev-orchestrator.md` (orchestrator has its own guardrail model)
+2. For each agent, check its tool grants (from frontmatter or Tool Scoping section) and verify:
+   - **Agents with Bash access** must have anti-patterns that mention destructive commands (e.g., `rm -rf`, `git push --force`, `drop table`, or similar)
+   - **Agents with Write/Edit access** must have a section or statements about what they NEVER do (e.g., `NEVER implement code`, `NEVER modify files directly`)
+3. Report which agents are missing guardrails for their capability level
+
+Result:
+- **PASS** if all agents have appropriate guardrails for their tool access
+- **WARN** if any agent is missing guardrails (not blocking, but should be fixed)
+- **FAIL** — not used for this check (guardrails are advisory)
+
+---
+
 ## Output Format
 
 Present the consolidated report using this exact format:
@@ -85,8 +102,13 @@ Status: {PASS|WARN|FAIL}
 {for each agent with issues: "  {agent}: missing {section1}, {section2}"}
 {if PASS: "All worker agents have required sections"}
 
+--- Check 4: Guardrails validation ---
+Status: {PASS|WARN}
+{for each agent with issues: "  {agent}: has {capability} but missing {guardrail}"}
+{if PASS: "All agents have appropriate guardrails for their tool access"}
+
 ====================================
-  Result: {X} / 3 checks passed
+  Result: {X} / 4 checks passed
 ====================================
 ```
 

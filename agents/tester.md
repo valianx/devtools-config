@@ -173,7 +173,7 @@ Before running coverage, ensure the project has a proper coverage configuration 
 ## Phase 3 — Execution & Reporting
 
 1. **Run tests** using the project's configured test commands (discovered from package.json, Makefile, pyproject.toml, etc.)
-2. **Fix failing tests** — if tests fail, diagnose and fix before finishing
+2. **Fix failing tests** — if tests fail, diagnose and fix before finishing. **Max 3 internal fix attempts.** If still failing after 3 attempts, report `status: failed` with failing test names, last error output, and what was tried. Do not loop indefinitely.
 3. **Report results** in session docs
 
 ---

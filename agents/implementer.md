@@ -120,6 +120,9 @@ Implement following these principles:
 ### Database (if applicable)
 - Always use migration files, never modify DB directly, include up+down migrations
 
+### Build & Lint Failures
+- **Max 3 internal fix attempts** for build/lint failures. If still failing after 3 attempts, report `status: failed` with full error details (command output, file paths, error messages). Do not loop indefinitely.
+
 ---
 
 ## Phase 3 — Self-Review

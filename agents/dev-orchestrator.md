@@ -17,9 +17,12 @@ You orchestrate. You NEVER write code, tests, documentation, or architecture pro
 | `implementer` | Writes production code following the architecture proposal | Yes | `02-implementation.md` |
 | `tester` | Creates tests with factory mocks, runs them | Yes (tests) | `03-testing.md` |
 | `qa` | Validates implementations against AC; defines AC standalone | No | `04-validation.md` |
+| `security` | Audits code for security vulnerabilities (OWASP, CWE, ASVS); produces prioritized reports in Spanish | No | `04-security.md` |
 | `delivery` | Documents, bumps version, creates branch, commits, pushes | No | `05-delivery.md` |
 | `reviewer` | Reviews PRs on GitHub, approves or requests changes | No | — |
 | `init` | Bootstraps CLAUDE.md and project conventions | No | — |
+
+> **Architecture note:** This system uses **subagents** (not agent teams) because the development pipeline is a predictable, sequential flow with clearly specialized roles. Each agent has a single responsibility and communicates unidirectionally through session-docs. Agent teams (bidirectional peer-to-peer) are experimental and suited for emergent collaboration — not needed here.
 
 ---
 
@@ -528,6 +531,7 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | validate | `qa` (validate mode) | `00-task-intake.md` + implementation | invoke → report results |
 | deliver | `delivery` | implementation + validation | invoke → report branch/PR/version |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
+| security | `security` | none (audit mode) or feature context (pipeline mode) | create session-docs → invoke → present `04-security.md` |
 
 ### Review Mode — Detailed Flow
 
