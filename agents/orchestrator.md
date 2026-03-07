@@ -140,14 +140,15 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 
 **Owner:** You (orchestrator)
 
-1. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
-2. **If GitHub issue data is present:**
+1. **Query knowledge graph** — before analyzing the task, search for related knowledge from past pipelines. Use the Memory MCP tools (if available) to search for entities related to the project name, technologies, or components mentioned in the task. Pass any relevant findings as Hot Context to downstream agents. If Memory MCP is not available, skip silently and continue.
+2. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
+3. **If GitHub issue data is present:**
    - Use the issue title as feature name (kebab-case)
    - Use the issue body as task description
    - Use labels to help classify type (e.g., `bug` → fix, `enhancement` → feature)
    - If the description is empty or unclear, infer the scope from the title and labels
-3. **MANDATORY — Move GitHub issue to "In Progress"** on the project board using `gh project list`, `gh project field-list`, `gh project item-list`, and `gh project item-edit`. If any command fails, report the error to the user and continue.
-4. **Classify:**
+4. **MANDATORY — Move GitHub issue to "In Progress"** on the project board using `gh project list`, `gh project field-list`, `gh project item-list`, and `gh project item-edit`. If any command fails, report the error to the user and continue.
+5. **Classify:**
    - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research`
    - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
    - **Security-sensitive:** `true` | `false` — set to `true` if ANY of these apply:
@@ -159,12 +160,12 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
      - Task is classified as `complex`
      - User explicitly requests security review
      - GitHub issue has a `security` label
-5. **Bootstrap check** (development tasks only — skip for `research` and `plan`):
+6. **Bootstrap check** (development tasks only — skip for `research` and `plan`):
    - Verify these prerequisites exist: `CLAUDE.md`, `CHANGELOG.md`, `.gitignore` with `/session-docs` entry
    - If ANY is missing → invoke `init` agent via Task tool before continuing
    - If all exist → proceed normally
-6. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
-7. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
+7. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
+8. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
 
 ---
 
@@ -390,6 +391,37 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
 3. **Do NOT close the issue.** Leave it open in "In Review" for human review.
 
 This phase does NOT iterate — if GitHub update fails, report to the user but consider the task complete.
+
+---
+
+## Knowledge Save (after every pipeline/mode that produces knowledge)
+
+**Owner:** You (orchestrator) — runs after the agent reports `status: success` in these modes: full pipeline, plan, design, research, test, security.
+
+**Does NOT run for:** review, init, define-ac, deliver (standalone), diagram, validate.
+
+Using the Memory MCP tools (if available), save the most reusable insights as entities in the knowledge graph. If Memory MCP is not available, skip silently.
+
+**What to save:**
+- **Patterns:** architecture patterns chosen and why (e.g., "repository + service layer for NestJS APIs")
+- **Errors:** bugs found and their fix (e.g., "Prisma enums fail with SQLite in tests — use TEXT")
+- **Constraints:** technical limitations discovered (e.g., "Payment API rate limit: 100 req/min")
+- **Decisions:** key technical decisions with rationale (e.g., "JWT with refresh tokens, 15min expiry")
+- **Tools:** gotchas with specific tools/libraries (e.g., "vitest needs `pool: 'forks'` for Prisma tests")
+
+**How to save:**
+1. Extract 1-3 reusable insights from the pipeline run (not everything — only what applies beyond this feature)
+2. Create entities with the Memory MCP `create_entities` tool:
+   - Entity name: short, descriptive (e.g., "prisma-sqlite-enum-workaround")
+   - Entity type: `pattern` | `error` | `constraint` | `decision` | `tool-gotcha`
+   - Observations: the insight text, including project name and date
+3. Create relations between entities if relevant (e.g., "prisma-sqlite-enum-workaround" → "relates_to" → "prisma")
+
+**Rules:**
+- Max 3 entities per pipeline run — quality over quantity
+- Only save cross-project knowledge (would help in a different project)
+- Do not save feature-specific details (those stay in session-docs)
+- If nothing reusable was learned, save nothing — that's fine
 
 ---
 
