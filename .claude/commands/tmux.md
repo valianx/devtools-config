@@ -1,4 +1,4 @@
-Orchestrate multiple Claude Code instances in parallel using tmux sessions via WSL. Use when you need to run independent tasks simultaneously (e.g., backend + frontend, multiple workers). This is a standalone utility — does NOT route through the dev-orchestrator.
+Orchestrate multiple Claude Code instances in parallel using tmux sessions via WSL. Use when you need to run independent tasks simultaneously (e.g., backend + frontend, multiple workers). This is a standalone utility — does NOT route through the orchestrator.
 
 Analyze the input: $ARGUMENTS
 
@@ -121,4 +121,4 @@ Examples:
 - Always use `read` to check worker progress before sending new commands
 - Use `keys C-c` to interrupt a stuck session
 - Each session runs its own independent Claude Code instance with its own context
-- This skill does NOT route through the dev-orchestrator
+- This skill does NOT route through the orchestrator

@@ -10,7 +10,7 @@ Examples: `/security`, `/security auth`, `/security api`, `/security dependencie
    - If no arguments: full audit of the current project
    - If arguments present: focused audit of the specified area (e.g., "auth", "api", "dependencies", "frontend", "backend")
 
-2. Pass to the `dev-orchestrator` agent:
+2. Pass to the `orchestrator` agent:
    ```
    Direct Mode Task:
    - Mode: security
@@ -22,7 +22,7 @@ Examples: `/security`, `/security auth`, `/security api`, `/security dependencie
 ## Mode 2 — No input provided
 
 1. Perform a full security audit of the current project.
-2. Pass to the `dev-orchestrator` agent:
+2. Pass to the `orchestrator` agent:
    ```
    Direct Mode Task:
    - Mode: security
@@ -35,7 +35,7 @@ Examples: `/security`, `/security auth`, `/security api`, `/security dependencie
 
 ## Important
 
-- Always invoke the `dev-orchestrator` agent — do NOT invoke the `security` agent directly
+- Always invoke the `orchestrator` agent — do NOT invoke the `security` agent directly
 - The orchestrator will route to the `security` agent
 - Output: `session-docs/{feature-name}/04-security.md`
 - The security agent performs static analysis using Glob, Grep, and Read — no Bash required

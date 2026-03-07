@@ -1,6 +1,6 @@
 Validate the health of agents and skills in this dev-team system. Run all 4 checks below **in sequence**, then show the consolidated report.
 
-**IMPORTANT:** This skill runs directly — do NOT invoke the `dev-orchestrator` agent or any other agent. Execute all checks yourself using the tools available to you (Bash, Glob, Read, Grep).
+**IMPORTANT:** This skill runs directly — do NOT invoke the `orchestrator` agent or any other agent. Execute all checks yourself using the tools available to you (Bash, Glob, Read, Grep).
 
 ---
 
@@ -45,7 +45,7 @@ Result:
 
 For each `.md` file in `agents/`:
 
-1. **Skip** `dev-orchestrator.md` (it has a different structure as the hub agent)
+1. **Skip** `orchestrator.md` (it has a different structure as the hub agent)
 2. For all other agent files, check that these **mandatory sections** exist (as `## Section Name` headings):
    - `## Core Philosophy`
    - `## Session Context Protocol`
@@ -65,7 +65,7 @@ Result:
 
 For each `.md` file in `agents/`:
 
-1. **Skip** `dev-orchestrator.md` (orchestrator has its own guardrail model)
+1. **Skip** `orchestrator.md` (orchestrator has its own guardrail model)
 2. For each agent, check its tool grants (from frontmatter or Tool Scoping section) and verify:
    - **Agents with Bash access** must have anti-patterns that mention destructive commands (e.g., `rm -rf`, `git push --force`, `drop table`, or similar)
    - **Agents with Write/Edit access** must have a section or statements about what they NEVER do (e.g., `NEVER implement code`, `NEVER modify files directly`)

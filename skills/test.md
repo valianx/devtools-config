@@ -4,7 +4,7 @@ Analyze the input: $ARGUMENTS
 
 ## Mode 1 — Feature name provided
 
-1. Pass to the `dev-orchestrator` agent:
+1. Pass to the `orchestrator` agent:
    ```
    Direct Mode Task:
    - Mode: test
@@ -22,7 +22,7 @@ Analyze the input: $ARGUMENTS
 
 ## Important
 
-- Always invoke the `dev-orchestrator` agent — do NOT invoke agents directly
+- Always invoke the `orchestrator` agent — do NOT invoke agents directly
 - The orchestrator will route to the `tester` agent
 - Requires existing session-docs with implementation docs
 - Output: tests created + `session-docs/{feature-name}/03-testing.md`

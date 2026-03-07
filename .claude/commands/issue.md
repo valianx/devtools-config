@@ -13,7 +13,7 @@ Analyze the input: $ARGUMENTS
 4. **Assess issue quality** before passing to orchestrator:
    - `needs-specify: true` — if the issue body is empty, has fewer than 3 lines, has no acceptance criteria, or is vague
    - `needs-specify: false` — if the issue already has structured AC (Given/When/Then or checkboxes) and clear scope
-5. Pass ALL the issue data to the `dev-orchestrator` agent:
+5. Pass ALL the issue data to the `orchestrator` agent:
    ```
    GitHub Issue Task:
    - Issue: #{number}
@@ -39,7 +39,7 @@ Analyze the input: $ARGUMENTS
 4. **Assess each issue's quality** before passing to orchestrator:
    - `needs-specify: true` — if the issue body is empty, has fewer than 3 lines, has no acceptance criteria, or is vague
    - `needs-specify: false` — if the issue already has structured AC (Given/When/Then or checkboxes) and clear scope
-5. Pass ALL issues as a batch to the `dev-orchestrator` agent:
+5. Pass ALL issues as a batch to the `orchestrator` agent:
    ```
    GitHub Issue Batch (N tasks):
 
@@ -98,7 +98,7 @@ Analyze the input: $ARGUMENTS
    gh issue view {number} --json number,title,body,labels,assignees,milestone,projectItems
    ```
 4. Confirm the created issue number with the user
-5. Pass the issue data to the `dev-orchestrator` agent using the format from Mode 1
+5. Pass the issue data to the `orchestrator` agent using the format from Mode 1
 
 ---
 
@@ -117,6 +117,6 @@ Ask the user: "Provide a GitHub issue number (#123), multiple issues (#12 #13 #1
 ## Important
 
 - **You read/create issues.** The orchestrator does NOT read issues — it receives the data from you.
-- Always invoke the `dev-orchestrator` agent to handle the task — do NOT execute the development pipeline yourself
+- Always invoke the `orchestrator` agent to handle the task — do NOT execute the development pipeline yourself
 - The orchestrator manages the full team: architect → implementer → tester → qa → delivery
 - The orchestrator will handle project board updates (move to "In Progress", comment, move to "In Review") using the issue number you provide

@@ -35,7 +35,7 @@ Analyze the input: $ARGUMENTS
 
 ### Phase 2 — Review (zero Bash, delegated to orchestrator)
 
-7. Pass ALL gathered data to the `dev-orchestrator` agent:
+7. Pass ALL gathered data to the `orchestrator` agent:
    ```
    Direct Mode Task:
    - Mode: review
@@ -97,7 +97,7 @@ Ask the user: "Proporciona un número de PR o URL para revisar. Ejemplo: `#45`, 
 
 ## Important
 
-- Always invoke the `dev-orchestrator` agent — do NOT invoke agents directly
+- Always invoke the `orchestrator` agent — do NOT invoke agents directly
 - The orchestrator coordinates: reviewer (analysis with pre-fetched data) → draft → return to skill
 - ALL Bash commands run in this skill (main context) — the orchestrator and reviewer do ZERO Bash
 - The user approves the review before publishing (Phase 3)

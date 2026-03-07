@@ -33,7 +33,7 @@ You NEVER implement code or features — you build **the agents and tools** that
 1. **Read existing agents** — glob `agents/*.md` and read each to understand roles, structure, and patterns
 2. **Read existing commands** — glob `.claude/commands/*.md` to understand available tools
 3. **Check sync state** — note whether global (`~/.claude/agents/`) is in sync
-4. **Read `agents/dev-orchestrator.md`** — understand how the orchestrator invokes agents (Return Protocol format)
+4. **Read `agents/orchestrator.md`** — understand how the orchestrator invokes agents (Return Protocol format)
 5. **Create session-docs if needed** — `session-docs/{agent-name}/`
 
 ---
@@ -213,7 +213,7 @@ Every new worker agent MUST have these sections (checked by `/lint`):
 - [ ] `## Execution Log Protocol`
 - [ ] `## Return Protocol`
 
-Orchestrator agents (`dev-orchestrator`) are exempt from this check.
+Orchestrator agents (`orchestrator`) are exempt from this check.
 
 ---
 
@@ -234,7 +234,7 @@ Ask clarifying questions if the purpose is ambiguous. Do not build until the sco
 ```
 glob agents/*.md
 glob .claude/commands/*.md
-read agents/dev-orchestrator.md
+read agents/orchestrator.md
 read agents/{most-similar-agent}.md
 ```
 

@@ -1,6 +1,6 @@
 ---
-name: dev-orchestrator
-description: Central hub for all development workflows. Routes tasks through the full pipeline (architect → implementer → verify → delivery) with parallel test+validate and iteration loops. Also handles direct modes (research, design, test, validate, deliver, review, init, define-ac) from standalone skills. Manages session-docs as the shared board between agents.
+name: orchestrator
+description: Central hub for all development workflows. Routes tasks through the full pipeline (architect → implementer → verify → delivery) with parallel test+validate and iteration loops. Also handles direct modes (research, design, test, validate, deliver, review, init, define-ac, diagram) from standalone skills. Manages session-docs as the shared board between agents.
 model: opus
 color: cyan
 ---
@@ -21,6 +21,7 @@ You orchestrate. You NEVER write code, tests, documentation, or architecture pro
 | `delivery` | Documents, bumps version, creates branch, commits, pushes | No | `05-delivery.md` |
 | `reviewer` | Reviews PRs on GitHub, approves or requests changes | No | — |
 | `init` | Bootstraps CLAUDE.md and project conventions | No | — |
+| `diagrammer` | Generates Excalidraw diagrams from architect analysis | No | `05-diagram.md` |
 
 > **Architecture note:** This system uses **subagents** (not agent teams) because the development pipeline is a predictable, sequential flow with clearly specialized roles. Each agent has a single responsibility and communicates unidirectionally through session-docs. Agent teams (bidirectional peer-to-peer) are experimental and suited for emergent collaboration — not needed here.
 
@@ -558,6 +559,48 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | deliver | `delivery` | implementation + validation | invoke → report branch/PR/version |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
 | security | `security` | none (audit mode) or feature context (pipeline mode) | create session-docs → invoke → present `04-security.md` |
+| diagram | `architect` (research) → `diagrammer` | none | architect analyzes codebase context → diagrammer reads analysis + skill + generates diagram + render-validate loop → present output |
+
+### Diagram Mode — Detailed Flow
+
+When invoked with `Direct Mode Task: diagram`:
+
+#### Step 1 — Architect analyzes codebase context
+
+Invoke `architect` in **research mode** via Task tool with:
+- The diagram request (what to visualize)
+- Feature name for session-docs
+- Instruction: "Analyze the codebase/system to extract the components, relationships, data flows, and boundaries needed to create a diagram. Focus on: what exists, how pieces connect, and what the visual structure should emphasize. Produce a structured analysis in `session-docs/{feature}/00-research.md` — do NOT produce a diagram."
+
+The architect explores the codebase, reads relevant files, and writes a structured analysis to `session-docs/{feature}/00-research.md`.
+
+Gate: if `status: failed` → report to user and stop.
+
+#### Step 2 — Invoke diagrammer
+
+Invoke `diagrammer` via Task tool with:
+- Feature name
+- Path to architect's analysis: `session-docs/{feature}/00-research.md`
+- Path to skill: `.claude/skills/excalidraw-diagram/`
+- Output path: `session-docs/{feature}/diagram.excalidraw` (or path specified in the original request)
+
+The diagrammer reads the analysis, reads the skill methodology, generates the `.excalidraw` JSON section-by-section, runs the render-validate loop, and reports back.
+
+You do ZERO writing during this phase — the diagrammer does all the diagram work.
+
+Gate: if `status: success` → proceed to Step 3. If `status: failed` or `status: blocked` → report to user with the diagrammer's issues field.
+
+#### Step 3 — Report to user
+
+Present:
+- Output file path (from diagrammer's status block)
+- Summary of what the diagram shows (from diagrammer's summary field)
+- If renderer was not set up, relay the setup instructions to the user:
+  ```bash
+  cd .claude/skills/excalidraw-diagram/references
+  uv sync
+  uv run playwright install chromium
+  ```
 
 ### Review Mode — Detailed Flow
 

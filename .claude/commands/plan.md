@@ -24,7 +24,7 @@ Use the detected mode in the payload below. When in doubt, ask the user: "Do you
 4. **Assess issue quality** before passing to orchestrator:
    - `needs-specify: true` — if the issue body is empty, has fewer than 3 lines, has no acceptance criteria, or is vague
    - `needs-specify: false` — if the issue already has structured AC (Given/When/Then or checkboxes) and clear scope
-5. Pass ALL the issue data to the `dev-orchestrator` agent:
+5. Pass ALL the issue data to the `orchestrator` agent:
    ```
    Planning Task:
    - Mode: {plan | plan-and-execute}
@@ -45,7 +45,7 @@ Use the detected mode in the payload below. When in doubt, ask the user: "Do you
 1. Do NOT create a GitHub issue — the problemática is the input, the issues will be created at the end as result of the breakdown
 2. Analyze the description to determine:
    - **Title**: short, imperative summary (max 70 chars)
-3. Pass the problemática to the `dev-orchestrator` agent:
+3. Pass the problemática to the `orchestrator` agent:
    ```
    Planning Task:
    - Mode: {plan | plan-and-execute}
@@ -74,7 +74,7 @@ Ask the user: "Provide a GitHub issue number (#123), a URL, or describe the prob
 ## Important
 
 - **You read issues. The orchestrator does NOT** — it receives the data from you.
-- Always invoke the `dev-orchestrator` agent — do NOT execute any pipeline yourself
+- Always invoke the `orchestrator` agent — do NOT execute any pipeline yourself
 - **Mode `plan`**: orchestrator runs SPECIFY → DESIGN (planning mode) → create tasks → stop
 - **Mode `plan-and-execute`**: orchestrator runs SPECIFY → DESIGN (planning mode) → create tasks → then executes each task through the full pipeline
 - **No GitHub? No problem.** The orchestrator will auto-detect `gh` availability. If unavailable, tasks are written as markdown files in `session-docs/{feature-name}/tasks/` instead of GitHub issues.
