@@ -2,13 +2,26 @@
 
 Configuraciones y herramientas para mi ambiente de desarrollo local.
 
+## Setup
+
+```bash
+git clone <repo>
+cd devtools-config
+./setup.sh
+```
+
+Instala todo: Claude Code, agentes, skills, MCP servers (Memory + context7), ChromaDB, y el renderer de Excalidraw.
+
+Prerequisites: `node`, `npm`, `python`, `git`. Opcional: `uv` (para excalidraw renderer).
+
 ## Estructura
 
 ```
 devtools-config/
 ├── AI development/      # Sistema de agentes AI para Claude Code
 ├── presentation/        # Presentaciones (HTML)
-└── windows-terminal/    # Configuracion de Windows Terminal
+├── windows-terminal/    # Configuracion de Windows Terminal
+└── setup.sh             # Setup automatizado del ambiente
 ```
 
 ## AI Development
