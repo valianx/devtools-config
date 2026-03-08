@@ -227,6 +227,8 @@ install_chromadb_mcp() {
     cp "$mcp_src/server.py" "$mcp_dest/"
     cp "$mcp_src/pyproject.toml" "$mcp_dest/"
     cp "$mcp_src/migrate_knowledge.py" "$mcp_dest/"
+    mkdir -p "$mcp_dest/viewer"
+    cp "$mcp_src/viewer/app.py" "$mcp_dest/viewer/"
 
     # Install dependencies
     if [ -n "$UV" ]; then
