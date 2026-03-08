@@ -349,6 +349,8 @@ if $IS_WINDOWS && $HAS_WSL; then
   # Convertir ruta del repo a formato accesible desde WSL
   # C:\Users\mario\projects\... → /mnt/c/Users/mario/projects/...
   WSL_REPO_DIR=$(echo "$REPO_DIR" | sed 's|^/\([a-zA-Z]\)/|/mnt/\L\1/|' | sed 's|\\|/|g')
+  # Ruta al .claude de Windows desde WSL (para compartir ChromaDB)
+  WSL_WIN_CLAUDE=$(echo "$HOME/.claude" | sed 's|^/\([a-zA-Z]\)/|/mnt/\L\1/|' | sed 's|\\|/|g')
 
   # Script que se ejecuta dentro de WSL
   WSL_SCRIPT='
@@ -357,6 +359,8 @@ set -euo pipefail
 REPO_DIR="'"$WSL_REPO_DIR"'"
 AI_DEV="$REPO_DIR/AI development"
 CLAUDE_DIR="$HOME/.claude"
+# ChromaDB compartida: apunta al directorio de Windows para tener una sola DB
+WIN_CHROMADB_PATH="'"$WSL_WIN_CLAUDE"'/chromadb"
 
 GREEN="\033[0;32m"
 YELLOW="\033[1;33m"
@@ -471,15 +475,16 @@ if command -v claude >/dev/null 2>&1; then
     ok "Memory MCP removido (reemplazado por ChromaDB)"
   fi
 
-  # ChromaDB MCP
+  # ChromaDB MCP — apunta a la DB de Windows (compartida)
   if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
     ok "ChromaDB MCP ya configurado"
   elif [ -f "$MCP_DEST/server.py" ]; then
     RUN_CMD="python $MCP_DEST/server.py"
     [ -n "$UV" ] && RUN_CMD="uv run --directory $MCP_DEST python server.py"
-    claude mcp add --scope user -e CHROMADB_PATH="$CLAUDE_DIR/chromadb" \
-      chromadb-knowledge -- $RUN_CMD 2>&1 \
-      && ok "ChromaDB MCP configurado" || warn "No se pudo configurar ChromaDB MCP"
+    claude mcp add chromadb-knowledge --scope user -e CHROMADB_PATH="$WIN_CHROMADB_PATH" \
+      -- $RUN_CMD 2>&1 \
+      && ok "ChromaDB MCP configurado (DB compartida: $WIN_CHROMADB_PATH)" \
+      || warn "No se pudo configurar ChromaDB MCP"
   fi
 
   # context7 MCP
@@ -488,20 +493,6 @@ if command -v claude >/dev/null 2>&1; then
     || (claude mcp add --scope user \
         context7 -- npx -y @upstash/context7-mcp@latest 2>&1 \
         && ok "context7 MCP configurado" || warn "No se pudo configurar context7")
-
-  # Migrate knowledge.json if exists
-  if [ -f "$CLAUDE_DIR/knowledge.json" ] && [ ! -f "$CLAUDE_DIR/chromadb/chroma.sqlite3" ]; then
-    step "[WSL] Migrando knowledge.json a ChromaDB..."
-    if [ -n "$UV" ]; then
-      (cd "$MCP_DEST" && "$UV" run python migrate_knowledge.py \
-        --source "$CLAUDE_DIR/knowledge.json" --db-path "$CLAUDE_DIR/chromadb" 2>&1) \
-        && ok "Migración completada" || warn "Migración falló"
-    elif [ -n "$PYTHON" ]; then
-      $PYTHON "$MCP_DEST/migrate_knowledge.py" \
-        --source "$CLAUDE_DIR/knowledge.json" --db-path "$CLAUDE_DIR/chromadb" 2>&1 \
-        && ok "Migración completada" || warn "Migración falló"
-    fi
-  fi
 else
   warn "Claude Code no encontrado en WSL — MCP no configurado"
 fi
@@ -533,6 +524,7 @@ if $IS_WINDOWS && $HAS_WSL; then
   if $WSL_DONE; then
     echo "  WSL:"
     echo "    Mismo contenido desplegado en la home de WSL"
+    echo "    ChromaDB: compartida con Windows (misma DB)"
     echo "    Claude Code + MCP configurados independientemente"
   else
     echo "  WSL: no configurado (verificar manualmente)"
