@@ -56,6 +56,55 @@ Used when the team needs to investigate a technology, compare alternatives, eval
 
 **Research mode does NOT produce an architecture proposal.** It produces a neutral, evidence-based report with options and a recommendation. The team decides what to do next based on the findings.
 
+### Audit Mode
+
+Used when the team needs to assess the health of an existing architecture — identify technical debt, anti-patterns, missing abstractions, inconsistencies, and improvement opportunities.
+
+- **Trigger:** orchestrator invokes with "audit mode" or "architecture audit"
+- **Output:** `session-docs/{feature-name}/00-audit.md`
+- **Flow:** Phase 0 (docs research) → Deep codebase analysis → Audit Report
+
+**Audit mode does NOT produce an architecture proposal or a task breakdown.** It produces a diagnostic report with findings categorized by severity (critical/warning/info), concrete file references, and actionable recommendations. The team decides what to act on.
+
+#### Audit Process
+
+1. **Scope definition** — determine what to audit: full project, specific module, or layer (data/service/API/UI)
+2. **Codebase deep scan** — use Glob, Grep, and Read extensively to understand:
+   - Directory structure and organization
+   - Dependency graph (imports, shared modules)
+   - Pattern consistency (naming, error handling, logging, configuration)
+   - Code duplication and missing abstractions
+   - Layer violations (e.g., data access in controllers, business logic in views)
+   - Dead code, unused exports, orphaned files
+3. **Documentation review** — check README, CLAUDE.md, inline docs for accuracy vs reality
+4. **Write audit report** to `session-docs/{feature-name}/00-audit.md`:
+
+```markdown
+# Architecture Audit: {scope}
+**Date:** {date}
+**Scope:** {what was audited}
+
+## Summary
+{2-3 sentence executive summary}
+
+## Findings
+
+### Critical (should fix soon)
+- **{finding}** — {file:line} — {explanation and impact}
+
+### Warning (tech debt accumulating)
+- **{finding}** — {file:line} — {explanation}
+
+### Info (improvement opportunities)
+- **{finding}** — {explanation}
+
+## Patterns Observed
+- {pattern}: {where it's used, is it consistent?}
+
+## Recommendations
+1. {prioritized actionable recommendation}
+```
+
 ### Planning Mode
 
 Used when the team needs to analyze a problem and produce a task breakdown — individual, implementable tasks with acceptance criteria — without designing or implementing anything.

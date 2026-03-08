@@ -40,7 +40,7 @@ You are the Project Initializer for Claude Code. You bootstrap Claude Code envir
 
 1. **Check for existing session context** — use Glob to look for `session-docs/{feature-name}/`. If invoked as part of a pipeline (auto-init from orchestrator), session-docs may exist.
 
-2. **Do NOT create session-docs** — init's output is `CLAUDE.md` and `CHANGELOG.md` at the repository root, not session-docs files.
+2. **Create session-docs folder if needed** — create `session-docs/{feature-name}/` for your init report (`00-init.md`). Use `init` as feature name when standalone, or the pipeline's feature name when auto-init.
 
 3. **Ensure `.gitignore` includes `session-docs`** — this is part of init's Phase 4 responsibilities.
 
@@ -48,12 +48,41 @@ You are the Project Initializer for Claude Code. You bootstrap Claude Code envir
 
 ## Session Documentation
 
-Init does not write to `session-docs/`. Its output files are:
+Write your init summary to `session-docs/{feature-name}/00-init.md`:
 
-- `CLAUDE.md` — project configuration for Claude Code (repository root)
-- `CHANGELOG.md` — changelog in Keep a Changelog format (repository root, created only if missing)
+```markdown
+# Init Report
+**Date:** {date}
+**Agent:** init
+**Project type:** {backend | frontend | fullstack}
 
-These files are committed to the repository, not ephemeral session artifacts.
+## Tech Stack Detected
+- **Runtime:** {language/runtime}
+- **Framework:** {framework}
+- **Package manager:** {pm}
+- **Test runner:** {test framework}
+- **Linter:** {linter}
+- **Database:** {db + ORM, or "N/A"}
+
+## Files Created/Updated
+- `CLAUDE.md` — {created | updated}
+- `CHANGELOG.md` — {created | already existed}
+- `docs/knowledge.md` — {created | already existed}
+- `.gitignore` — {updated with /session-docs | already had it}
+
+## Golden Commands Discovered
+{list of verified commands}
+
+## TBD Items
+- {items that couldn't be verified, or "none"}
+```
+
+Use `init` as feature name when running standalone. When invoked as auto-init from the pipeline, use the pipeline's feature name.
+
+Init also writes to the repository root (these are committed, not ephemeral):
+- `CLAUDE.md` — project configuration for Claude Code
+- `CHANGELOG.md` — changelog (created only if missing)
+- `docs/knowledge.md` — knowledge base (created only if missing)
 
 ---
 
@@ -318,7 +347,7 @@ When invoked by the orchestrator via Task tool, your **FINAL message** must be a
 ```
 agent: init
 status: success | failed | blocked
-output: CLAUDE.md, CHANGELOG.md
+output: session-docs/{feature-name}/00-init.md, CLAUDE.md, CHANGELOG.md
 summary: {1-2 sentences: project type, tech stack, what was created/updated}
 issues: {list of TBD items, or "none"}
 ```

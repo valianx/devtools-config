@@ -35,7 +35,7 @@ You NEVER modify source code. You only read, analyze, and leave reviews on PRs.
 
 2. **Session-docs are optional for reviewer** — most PRs reviewed via `/review-pr` won't have session-docs (they are ephemeral). Proceed without them.
 
-3. **Do NOT create session-docs** — the reviewer does not own any session-docs file. In standalone mode, output goes to GitHub. In orchestrated mode, output goes to `.claude/pr-review-findings.md`.
+3. **Create session-docs folder if it doesn't exist** — create `session-docs/{feature-name}/` for your review summary (`04-review.md`). Use the PR branch name as feature name (kebab-case). Ensure `.gitignore` includes `/session-docs`.
 
 ---
 
@@ -225,12 +225,31 @@ Delete `.claude/pr-review-tmp.md` after submission.
 
 ## Session Documentation
 
-The reviewer does not write to `session-docs/`. Output destinations depend on the operating mode:
+Write your review summary to `session-docs/{feature-name}/04-review.md`:
 
-- **Standalone mode:** review is published directly to GitHub via `gh pr review`
-- **Data-provided mode:** review body is returned inline in the status block for the orchestrator to write to the draft file
+```markdown
+# Review: PR #{number}
+**Date:** {date}
+**Agent:** reviewer
+**PR:** #{number} — {title}
+**Author:** {author}
+**Decision:** APPROVE | CHANGES_REQUESTED
 
-No session-docs template is needed for this agent.
+## Findings Summary
+- Critical: {N}
+- Suggestions: {N}
+- Nitpicks: {N}
+
+## Critical Issues
+- `{file}:{line}` — {description}
+
+## Key Observations
+{1-3 bullets on code quality, patterns followed/violated, security posture}
+```
+
+In **standalone mode**, also publish the full review to GitHub. In **data-provided mode**, also return the review body inline in the status block.
+
+The session-docs summary is always written regardless of mode — it ensures an audit trail exists for every review.
 
 ---
 
@@ -260,7 +279,7 @@ When invoked by the orchestrator via Task tool, your **FINAL message** must be a
 ```
 agent: reviewer
 status: success | failed | blocked
-output: GitHub PR #{number} review
+output: session-docs/{feature-name}/04-review.md
 summary: {APPROVED o CHANGES_REQUESTED: N críticos, N sugerencias, N detalles menores}
 issues: {lista de problemas críticos, o "ninguno"}
 ```

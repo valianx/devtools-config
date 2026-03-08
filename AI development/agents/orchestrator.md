@@ -36,12 +36,20 @@ session-docs/{feature-name}/
   00-state.md              ← you write this (orchestrator) — pipeline checkpoint
   00-execution-log.md      ← all agents append to this
   00-task-intake.md        ← you write this (orchestrator)
-  01-architecture.md       ← architect
+  00-init.md               ← init (bootstrap report)
+  00-research.md           ← architect (research mode)
+  00-audit.md              ← architect (audit mode)
+  00-acceptance-criteria.md ← qa (define-ac mode)
+  01-architecture.md       ← architect (design mode)
+  01-planning.md           ← architect (planning mode)
   02-implementation.md     ← implementer
   03-testing.md            ← tester
-  04-validation.md         ← qa
+  04-validation.md         ← qa (validate mode)
   04-security.md           ← security (only if security-sensitive)
+  04-review.md             ← reviewer
   05-delivery.md           ← delivery
+  05-diagram.md            ← diagrammer (summary)
+  diagram.excalidraw       ← diagrammer (output)
 ```
 
 **At task start:**
@@ -140,16 +148,17 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 
 **Owner:** You (orchestrator)
 
-1. **Query knowledge graph** — before analyzing the task, search for related knowledge from past pipelines. Use the Memory MCP tools (if available) to search for entities related to the project name, technologies, or components mentioned in the task. Pass any relevant findings as Hot Context to downstream agents. If Memory MCP is not available, skip silently and continue.
-2. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
-3. **If GitHub issue data is present:**
+1. **Check for existing pipeline** — use Glob to check if `session-docs/{feature-name}/00-state.md` already exists with `status: in_progress` or `status: iterating`. If found, warn the user: "A pipeline for '{feature-name}' is already active at Phase {N}. Use `/resume {feature-name}` to continue it, or confirm you want to start fresh." Wait for confirmation before proceeding. This prevents duplicate pipelines for the same feature.
+2. **Query knowledge graph** — before analyzing the task, search for related knowledge from past pipelines. Use the Memory MCP tools (if available) to search for entities related to the project name, technologies, or components mentioned in the task. If a match exists, also search for entities with the same `entityType` to check for near-duplicates (for awareness, not blocking). Pass any relevant findings as Hot Context to downstream agents. If Memory MCP is not available, skip silently and continue.
+3. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
+4. **If GitHub issue data is present:**
    - Use the issue title as feature name (kebab-case)
    - Use the issue body as task description
    - Use labels to help classify type (e.g., `bug` → fix, `enhancement` → feature)
    - If the description is empty or unclear, infer the scope from the title and labels
-4. **MANDATORY — Move GitHub issue to "In Progress"** on the project board using `gh project list`, `gh project field-list`, `gh project item-list`, and `gh project item-edit`. If any command fails, report the error to the user and continue.
-5. **Classify:**
-   - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research`
+5. **MANDATORY — Move GitHub issue to "In Progress"** on the project board using `gh project list`, `gh project field-list`, `gh project item-list`, and `gh project item-edit`. If any command fails, report the error to the user and continue.
+6. **Classify:**
+   - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research` | `spike`
    - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
    - **Security-sensitive:** `true` | `false` — set to `true` if ANY of these apply:
      - Task touches authentication, authorization, or session management
@@ -160,12 +169,13 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
      - Task is classified as `complex`
      - User explicitly requests security review
      - GitHub issue has a `security` label
-6. **Bootstrap check** (development tasks only — skip for `research` and `plan`):
+7. **Bootstrap check** (development tasks only — skip for `research`, `plan`, and `spike`):
    - Verify these prerequisites exist: `CLAUDE.md`, `CHANGELOG.md`, `.gitignore` with `/session-docs` entry
    - If ANY is missing → invoke `init` agent via Task tool before continuing
    - If all exist → proceed normally
-7. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
-8. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
+8. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
+9. **If type is `spike`**, jump to **Spike Flow** in Special Flows section.
+10. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
 
 ---
 
@@ -329,6 +339,14 @@ Launch agents simultaneously using Task tool calls in the same message:
 
 Read the failing agent's session-docs to understand root cause. Then:
 
+Determine the root cause by reading the failing agent's session-docs:
+
+**How to distinguish cases:**
+- **Case A** if: test errors are in implementation code (wrong logic, missing handling, typos), or QA reports AC not met due to incomplete implementation
+- **Case B** if: the design can't satisfy a requirement (e.g., chosen pattern doesn't support a use case, missing abstraction, wrong data model), or implementer reports "architecture doesn't cover this scenario"
+- **Case C** if: AC themselves are wrong, contradictory, or incomplete — the implementation is correct but the criteria are flawed
+- **Case D** if: tester+qa pass but security finds Critical/High issues in the implementation
+
 **Case A — Implementation issue** (tests fail or code doesn't meet criteria):
 1. Merge all failures into a single brief for the implementer:
    - Failing test names and error messages (from `03-testing.md`)
@@ -396,7 +414,7 @@ This phase does NOT iterate — if GitHub update fails, report to the user but c
 
 ## Knowledge Save (after every pipeline/mode that produces knowledge)
 
-**Owner:** You (orchestrator) — runs after the agent reports `status: success` in these modes: full pipeline, plan, design, research, test, security.
+**Owner:** You (orchestrator) — runs after the agent reports `status: success` in these modes: full pipeline, plan, design, research, test, security, audit.
 
 **Does NOT run for:** review, init, define-ac, deliver (standalone), diagram, validate.
 
@@ -411,17 +429,27 @@ Using the Memory MCP tools (if available), save the most reusable insights as en
 
 **How to save:**
 1. Extract 1-3 reusable insights from the pipeline run (not everything — only what applies beyond this feature)
-2. Create entities with the Memory MCP `create_entities` tool:
+2. **Dedup check (MANDATORY)** — before creating any entity, search for it first:
+   - Use `search_nodes` with the entity name and key terms from its observations
+   - If a similar entity exists (same topic, same technology), use `add_observations` to append new observations to the existing entity instead of creating a duplicate
+   - Only use `create_entities` if no similar entity was found
+3. Create entities with the Memory MCP `create_entities` tool (only if step 2 found no match):
    - Entity name: short, descriptive (e.g., "prisma-sqlite-enum-workaround")
    - Entity type: `pattern` | `error` | `constraint` | `decision` | `tool-gotcha`
    - Observations: the insight text, including project name and date
-3. Create relations between entities if relevant (e.g., "prisma-sqlite-enum-workaround" → "relates_to" → "prisma")
+4. Create relations between entities if relevant (e.g., "prisma-sqlite-enum-workaround" → "relates_to" → "prisma")
+5. **Auto-consolidate check** — after saving, use `read_graph` to count total entities. If count exceeds 100:
+   - Search for entities with overlapping observations or same technology
+   - Merge duplicates: `add_observations` to keep entity, `delete_entities` for merged one
+   - Target: reduce back to ~80 entities
+   - Log consolidation in Hot Context for awareness
 
 **Rules:**
 - Max 3 entities per pipeline run — quality over quantity
 - Only save cross-project knowledge (would help in a different project)
 - Do not save feature-specific details (those stay in session-docs)
 - If nothing reusable was learned, save nothing — that's fine
+- Always dedup before creating — duplicates waste context window during Phase 0a searches
 
 ---
 
@@ -481,6 +509,27 @@ When the user asks to investigate, compare technologies, evaluate a migration, o
 3. Skip Phases 2-5 (no implementation, testing, validation, or delivery)
 4. Present the research report to the user
 5. Ask the user how to proceed (implement the recommendation, discard, or investigate further)
+
+### Spike (quick prototype)
+When the user wants to quickly test a technical hypothesis without full pipeline ceremony:
+1. Intake (classify as `spike`, complexity always `simple`)
+2. Skip Design — no architecture proposal needed
+3. Write minimal `00-task-intake.md` with just: description, what to test, success criteria
+4. Invoke `implementer` with: "This is a spike — write exploratory code to test: {description}. No tests needed. Focus on proving whether {hypothesis} works. Document what you found in `02-implementation.md`."
+5. Skip Phases 3-5 (no testing, validation, delivery, or GitHub update)
+6. Present results to the user with a clear question:
+   ```
+   Spike complete: {summary of what was found}
+
+   Options:
+   1. Formalize as feature → I'll create an issue with what we learned as technical context
+   2. Discard → I'll revert the changes (git checkout)
+   3. Investigate further → I'll run another spike or a /research
+   ```
+7. Act on user's choice:
+   - Formalize: create GitHub issue via `gh issue create` using the **SDD issue template** — include spike findings in the Technical Context section. Then ask user: "Issue created. Run through the full pipeline now?" If yes, process the issue as a normal `/issue` task (full pipeline from Phase 0a).
+   - Discard: `git checkout -- .` to revert exploratory code (confirm with user first). Clean up `session-docs/{feature-name}/` if created.
+   - Investigate: continue as directed — run another spike with different parameters, or switch to `/research` for deeper analysis.
 
 ### Plan (analysis + task breakdown)
 
@@ -586,12 +635,15 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | review | `reviewer` | PR metadata + diff from skill | invoke reviewer → build draft → return to skill |
 | init | `init` | none | invoke → report generated files |
 | design | `architect` (design mode) | none | intake + specify → invoke → present `01-architecture.md` |
-| test | `tester` | `02-implementation.md` | invoke → report results |
-| validate | `qa` (validate mode) | `00-task-intake.md` + implementation | invoke → report results |
-| deliver | `delivery` | implementation + validation | invoke → report branch/PR/version |
+| test | `tester` | `02-implementation.md` + `00-task-intake.md` (AC) | check AC exist → pass AC to tester → invoke → report results. If `00-task-intake.md` missing, warn user: "No AC found — tests won't have AC coverage mapping. Run `/define-ac` first or continue without." |
+| validate | `qa` (validate mode) | `00-task-intake.md` + implementation | check `00-task-intake.md` exists. If missing → tell user: "No AC found. Run `/define-ac {feature}` first to generate acceptance criteria." Do NOT invoke qa without AC. |
+| deliver | `delivery` | implementation + tests + validation | verify `02-implementation.md`, `03-testing.md`, AND `04-validation.md` exist. If any missing → tell user which prerequisite is missing and suggest the appropriate skill (`/test`, `/validate`). Do NOT invoke delivery without all three. |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
 | security | `security` | none (audit mode) or feature context (pipeline mode) | create session-docs → invoke → present `04-security.md` |
 | diagram | `architect` (research) → `diagrammer` | none | architect analyzes codebase context → diagrammer reads analysis + skill + generates diagram + render-validate loop → present output |
+| resume | you (orchestrator) | `00-state.md` from `/resume` skill | read recovery context → resume pipeline from last checkpoint |
+| spike | `implementer` | none | quick intake → implementer (no design) → present results → ask: formalize/discard/investigate |
+| audit | `architect` (audit mode) | none | create session-docs → invoke → present `00-audit.md` |
 
 ### Diagram Mode — Detailed Flow
 
@@ -615,12 +667,32 @@ Invoke `diagrammer` via Task tool with:
 - Path to architect's analysis: `session-docs/{feature}/00-research.md`
 - Path to skill: `.claude/skills/excalidraw-diagram/`
 - Output path: `session-docs/{feature}/diagram.excalidraw` (or path specified in the original request)
+- **Expected sections:** list the major sections from the architect's analysis (e.g., "entry points, orchestrator hub, pipeline flow, agents column, memory system, session-docs"). This tells the diagrammer what completeness looks like.
 
 The diagrammer reads the analysis, reads the skill methodology, generates the `.excalidraw` JSON section-by-section, runs the render-validate loop, and reports back.
 
 You do ZERO writing during this phase — the diagrammer does all the diagram work.
 
-Gate: if `status: success` → proceed to Step 3. If `status: failed` or `status: blocked` → report to user with the diagrammer's issues field.
+#### Step 2.5 — Validate diagrammer output (MANDATORY)
+
+After the diagrammer returns `status: success`, validate the output before accepting it. The diagrammer may have taken shortcuts or generated an incomplete diagram.
+
+**Read the `.excalidraw` file** and check:
+
+1. **Has arrows** — count elements with `"type": "arrow"`. If 0 arrows, the diagram has no connections → REJECT.
+2. **Element count reasonable** — count total elements. A comprehensive diagram should have 80+ elements. If the count seems too low for the requested complexity → REJECT.
+3. **Key components present** — scan text elements for key terms from the architect's analysis. If major components are missing → REJECT.
+
+**If validation fails:**
+1. Re-invoke the diagrammer with specific feedback:
+   ```
+   The diagram is incomplete. Issues found:
+   - {list: no arrows, missing sections, too few elements}
+   - Expected sections: {list from Step 2}
+   - Current element count: {N}, expected: 80+
+   Resume from Phase 1 and add the missing content. Do NOT use MCP tools as shortcuts.
+   ```
+2. Max 2 re-invocations. If still failing after 2 retries → report `status: failed` to user with what was attempted.
 
 #### Step 3 — Report to user
 

@@ -1,13 +1,36 @@
-Orchestrate multiple Claude Code instances in parallel using tmux sessions via WSL. Use when you need to run independent tasks simultaneously (e.g., backend + frontend, multiple workers). This is a standalone utility — does NOT route through the orchestrator.
+Orchestrate multiple Claude Code instances in parallel using tmux sessions. Use when you need to run independent tasks simultaneously (e.g., backend + frontend, multiple workers). This is a standalone utility — does NOT route through the orchestrator.
 
 Analyze the input: $ARGUMENTS
 
 ---
 
-## Prerequisites
+## Environment Detection (MANDATORY FIRST STEP)
 
-- tmux runs inside WSL. All tmux commands MUST be prefixed with `wsl tmux`
-- Example: `wsl tmux list-sessions` instead of `tmux list-sessions`
+Before executing ANY tmux command, detect the runtime environment:
+
+```bash
+if [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
+  echo "ENV:WSL"
+elif [ "$(uname -s)" = "Linux" ] || [ "$(uname -s)" = "Darwin" ]; then
+  echo "ENV:NATIVE"
+elif command -v wsl.exe >/dev/null 2>&1 || [ "$OS" = "Windows_NT" ]; then
+  echo "ENV:WINDOWS"
+else
+  echo "ENV:NATIVE"
+fi
+```
+
+Based on the result, set the tmux command prefix for ALL subsequent commands:
+
+| Result | Meaning | Prefix |
+|--------|---------|--------|
+| `ENV:WINDOWS` | Running from Windows (PowerShell/cmd/Git Bash) | `wsl tmux` |
+| `ENV:WSL` | Running inside WSL | `tmux` |
+| `ENV:NATIVE` | Running on native Linux or macOS | `tmux` |
+
+Store this as `$TMUX` and use it everywhere below. Examples:
+- Windows: `wsl tmux list-sessions`
+- WSL/Linux/macOS: `tmux list-sessions`
 
 ---
 
@@ -24,7 +47,7 @@ If no arguments provided, show usage help (see bottom of this file).
 ### `list` — List active sessions
 
 ```bash
-wsl tmux list-sessions 2>/dev/null || echo "No active tmux sessions"
+$TMUX list-sessions 2>/dev/null || echo "No active tmux sessions"
 ```
 
 Display results as a formatted table.
@@ -33,12 +56,12 @@ Display results as a formatted table.
 
 1. Check if session exists:
    ```bash
-   wsl tmux has-session -t {session_name} 2>/dev/null && echo "EXISTS" || echo "NEW"
+   $TMUX has-session -t {session_name} 2>/dev/null && echo "EXISTS" || echo "NEW"
    ```
 2. If EXISTS → report "Session '{session_name}' already active" and read its current output
 3. If NEW → create and launch:
    ```bash
-   wsl tmux new-session -d -s {session_name} && wsl tmux send-keys -t {session_name}:0 "claude" C-m
+   $TMUX new-session -d -s {session_name} && $TMUX send-keys -t {session_name}:0 "claude" C-m
    ```
 4. Wait 3 seconds for Claude to initialize
 5. Read output to confirm Claude started
@@ -48,7 +71,7 @@ Display results as a formatted table.
 1. Verify session exists (if not, auto-start it)
 2. Send the command:
    ```bash
-   wsl tmux send-keys -t {session_name}:0 "{command}" C-m
+   $TMUX send-keys -t {session_name}:0 "{command}" C-m
    ```
 3. Confirm what was sent
 
@@ -57,7 +80,7 @@ Display results as a formatted table.
 1. Default lines = 50 if not specified
 2. Capture output:
    ```bash
-   wsl tmux capture-pane -t {session_name}:0 -p -S -{lines}
+   $TMUX capture-pane -t {session_name}:0 -p -S -{lines}
    ```
 3. Display the captured output. Strip empty leading/trailing lines for clarity.
 
@@ -66,7 +89,7 @@ Display results as a formatted table.
 1. Verify session exists
 2. Send keys:
    ```bash
-   wsl tmux send-keys -t {session_name}:0 {keys}
+   $TMUX send-keys -t {session_name}:0 {keys}
    ```
 3. Common keys reference: `C-c` (Ctrl+C), `C-m` (Enter), `C-d` (EOF), `Escape`
 
@@ -74,7 +97,7 @@ Display results as a formatted table.
 
 1. Kill the session:
    ```bash
-   wsl tmux kill-session -t {session_name}
+   $TMUX kill-session -t {session_name}
    ```
 2. Confirm: "Session '{session_name}' terminated"
 
@@ -82,7 +105,7 @@ Display results as a formatted table.
 
 1. Kill the tmux server:
    ```bash
-   wsl tmux kill-server 2>/dev/null
+   $TMUX kill-server 2>/dev/null
    ```
 2. Confirm: "All tmux sessions terminated"
 
@@ -122,3 +145,4 @@ Examples:
 - Use `keys C-c` to interrupt a stuck session
 - Each session runs its own independent Claude Code instance with its own context
 - This skill does NOT route through the orchestrator
+- Works on Windows (via WSL), WSL, native Linux, and macOS — environment is auto-detected
