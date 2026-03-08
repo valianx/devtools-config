@@ -149,7 +149,7 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 **Owner:** You (orchestrator)
 
 1. **Check for existing pipeline** — use Glob to check if `session-docs/{feature-name}/00-state.md` already exists with `status: in_progress` or `status: iterating`. If found, warn the user: "A pipeline for '{feature-name}' is already active at Phase {N}. Use `/resume {feature-name}` to continue it, or confirm you want to start fresh." Wait for confirmation before proceeding. This prevents duplicate pipelines for the same feature.
-2. **Query knowledge graph** — before analyzing the task, search for related knowledge from past pipelines. Use the Memory MCP tools (if available) to search for entities related to the project name, technologies, or components mentioned in the task. If a match exists, also search for entities with the same `entityType` to check for near-duplicates (for awareness, not blocking). Pass any relevant findings as Hot Context to downstream agents. If Memory MCP is not available, skip silently and continue.
+2. **Query knowledge graph** — before analyzing the task, search for related knowledge from past pipelines. Use the ChromaDB MCP tools (if available) to `search_nodes` with terms related to the project name, technologies, or components mentioned in the task. ChromaDB uses semantic search (vector embeddings), so natural language queries work well — e.g., "Next.js authentication patterns" or "Prisma serverless gotchas". Pass any relevant findings as Hot Context to downstream agents. If ChromaDB MCP is not available, skip silently and continue.
 3. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
 4. **If GitHub issue data is present:**
    - Use the issue title as feature name (kebab-case)
@@ -418,7 +418,7 @@ This phase does NOT iterate — if GitHub update fails, report to the user but c
 
 **Does NOT run for:** review, init, define-ac, deliver (standalone), diagram, validate.
 
-Using the Memory MCP tools (if available), save the most reusable insights as entities in the knowledge graph. If Memory MCP is not available, skip silently.
+Using the ChromaDB MCP tools (if available), save the most reusable insights as entities in the knowledge graph. ChromaDB provides semantic search, so entity names and observations should be descriptive for good retrieval. If ChromaDB MCP is not available, skip silently.
 
 **What to save:**
 - **Patterns:** architecture patterns chosen and why (e.g., "repository + service layer for NestJS APIs")
@@ -433,7 +433,7 @@ Using the Memory MCP tools (if available), save the most reusable insights as en
    - Use `search_nodes` with the entity name and key terms from its observations
    - If a similar entity exists (same topic, same technology), use `add_observations` to append new observations to the existing entity instead of creating a duplicate
    - Only use `create_entities` if no similar entity was found
-3. Create entities with the Memory MCP `create_entities` tool (only if step 2 found no match):
+3. Create entities with the ChromaDB MCP `create_entities` tool (only if step 2 found no match):
    - Entity name: short, descriptive (e.g., "prisma-sqlite-enum-workaround")
    - Entity type: `pattern` | `error` | `constraint` | `decision` | `tool-gotcha`
    - Observations: the insight text, including project name and date

@@ -210,19 +210,36 @@ install_python_deps() {
     warn "Skipping — uv no disponible"
   fi
 
-  # ChromaDB
-  step "[$env_label] ChromaDB..."
-  if [ -n "$PYTHON" ] && $PYTHON -c "import chromadb" 2>/dev/null; then
-    ok "ChromaDB ya instalado"
-  elif [ -n "$PYTHON" ]; then
-    echo "  Instalando ChromaDB..."
+  # ChromaDB ya se instala como parte de install_chromadb_mcp()
+}
+
+install_chromadb_mcp() {
+  local env_label="$1"
+  local claude_dir="$2"
+  local source_dir="$3"
+
+  step "[$env_label] ChromaDB MCP server..."
+  local mcp_src="$source_dir/chromadb-mcp"
+  local mcp_dest="$claude_dir/chromadb-mcp"
+
+  if [ -d "$mcp_src" ]; then
+    mkdir -p "$mcp_dest"
+    cp "$mcp_src/server.py" "$mcp_dest/"
+    cp "$mcp_src/pyproject.toml" "$mcp_dest/"
+    cp "$mcp_src/migrate_knowledge.py" "$mcp_dest/"
+
+    # Install dependencies
     if [ -n "$UV" ]; then
-      "$UV" pip install chromadb 2>&1 | tail -1 && ok "ChromaDB instalado via uv"
+      (cd "$mcp_dest" && "$UV" sync 2>&1 | tail -1) && ok "Dependencias instaladas via uv"
+    elif [ -n "$PYTHON" ]; then
+      (cd "$mcp_dest" && $PYTHON -m pip install chromadb "mcp>=1.0.0" 2>&1 | tail -1) && ok "Dependencias instaladas via pip"
     else
-      $PYTHON -m pip install chromadb 2>&1 | tail -1 && ok "ChromaDB instalado via pip"
+      warn "Python no disponible — ChromaDB MCP no se instalará"
+      return
     fi
+    ok "ChromaDB MCP desplegado en $mcp_dest"
   else
-    warn "Python no disponible — ChromaDB no se instalará"
+    warn "chromadb-mcp source no encontrado en $mcp_src"
   fi
 }
 
@@ -237,14 +254,29 @@ configure_mcp() {
     return
   fi
 
-  # Memory MCP
+  # ChromaDB MCP (reemplaza Memory MCP)
   if claude mcp list 2>&1 | grep -q "memory"; then
-    ok "Memory MCP ya configurado"
+    # Migrate: remove old Memory MCP, add ChromaDB MCP
+    warn "Memory MCP detectado — reemplazando con ChromaDB MCP..."
+    claude mcp remove memory --scope user 2>&1 || true
+  fi
+
+  local mcp_server="$claude_dir/chromadb-mcp/server.py"
+  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
+    ok "ChromaDB MCP ya configurado"
+  elif [ -f "$mcp_server" ]; then
+    local run_cmd
+    if [ -n "$UV" ]; then
+      run_cmd="uv run --directory $claude_dir/chromadb-mcp python server.py"
+    else
+      run_cmd="python $mcp_server"
+    fi
+    claude mcp add --scope user -e CHROMADB_PATH="$claude_dir/chromadb" \
+      chromadb-knowledge -- $run_cmd 2>&1 \
+      && ok "ChromaDB MCP configurado" \
+      || warn "No se pudo configurar ChromaDB MCP"
   else
-    claude mcp add --scope user -e MEMORY_FILE_PATH="$claude_dir/knowledge.json" \
-      memory -- npx -y @modelcontextprotocol/server-memory 2>&1 \
-      && ok "Memory MCP configurado" \
-      || warn "No se pudo configurar Memory MCP"
+    warn "ChromaDB MCP server no encontrado — saltando configuración"
   fi
 
   # context7 MCP
@@ -255,6 +287,26 @@ configure_mcp() {
       context7 -- npx -y @upstash/context7-mcp@latest 2>&1 \
       && ok "context7 MCP configurado" \
       || warn "No se pudo configurar context7"
+  fi
+
+  # Migrate knowledge.json if it exists and ChromaDB is empty
+  local knowledge_file="$claude_dir/knowledge.json"
+  local chromadb_dir="$claude_dir/chromadb"
+  if [ -f "$knowledge_file" ] && [ ! -d "$chromadb_dir/chroma.sqlite3" ]; then
+    step "[$env_label] Migrando knowledge.json a ChromaDB..."
+    local migrate_script="$claude_dir/chromadb-mcp/migrate_knowledge.py"
+    if [ -f "$migrate_script" ]; then
+      if [ -n "$UV" ]; then
+        (cd "$claude_dir/chromadb-mcp" && "$UV" run python migrate_knowledge.py \
+          --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1) \
+          && ok "Migración completada" \
+          || warn "Migración falló — knowledge.json conservado"
+      elif [ -n "$PYTHON" ]; then
+        $PYTHON "$migrate_script" --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1 \
+          && ok "Migración completada" \
+          || warn "Migración falló — knowledge.json conservado"
+      fi
+    fi
   fi
 }
 
@@ -273,6 +325,7 @@ UV=""
 if check_prerequisites "$ENV_LABEL"; then
   install_claude_code "$ENV_LABEL"
   COUNTS=$(deploy_files "$ENV_LABEL" "$HOME/.claude" "$AI_DEV")
+  install_chromadb_mcp "$ENV_LABEL" "$HOME/.claude" "$REPO_DIR/scripts"
   install_python_deps "$ENV_LABEL" "$HOME/.claude"
   configure_mcp "$ENV_LABEL" "$HOME/.claude"
   LOCAL_AGENTS=$(echo "$COUNTS" | cut -d: -f1)
@@ -392,32 +445,63 @@ else
   warn "Skipping renderer — uv no disponible en WSL"
 fi
 
-# ChromaDB
-step "[WSL] ChromaDB..."
-if [ -n "$PYTHON" ] && $PYTHON -c "import chromadb" 2>/dev/null; then
-  ok "ChromaDB ya instalado"
-elif [ -n "$PYTHON" ]; then
+# ChromaDB MCP server
+step "[WSL] ChromaDB MCP server..."
+MCP_SRC="$REPO_DIR/scripts/chromadb-mcp"
+MCP_DEST="$CLAUDE_DIR/chromadb-mcp"
+if [ -d "$MCP_SRC" ]; then
+  mkdir -p "$MCP_DEST"
+  cp "$MCP_SRC/server.py" "$MCP_DEST/"
+  cp "$MCP_SRC/pyproject.toml" "$MCP_DEST/"
+  cp "$MCP_SRC/migrate_knowledge.py" "$MCP_DEST/"
   if [ -n "$UV" ]; then
-    "$UV" pip install chromadb 2>&1 | tail -1 && ok "ChromaDB instalado"
-  else
-    $PYTHON -m pip install chromadb 2>&1 | tail -1 && ok "ChromaDB instalado"
+    (cd "$MCP_DEST" && "$UV" sync 2>&1 | tail -1) && ok "ChromaDB MCP deps instaladas"
+  elif [ -n "$PYTHON" ]; then
+    $PYTHON -m pip install chromadb "mcp>=1.0.0" 2>&1 | tail -1 && ok "ChromaDB MCP deps instaladas"
   fi
+  ok "ChromaDB MCP desplegado"
 fi
 
 # MCP servers
 step "[WSL] Configurando MCP servers..."
 if command -v claude >/dev/null 2>&1; then
-  claude mcp list 2>&1 | grep -q "memory" \
-    && ok "Memory MCP ya configurado" \
-    || (claude mcp add --scope user -e MEMORY_FILE_PATH="$CLAUDE_DIR/knowledge.json" \
-        memory -- npx -y @modelcontextprotocol/server-memory 2>&1 \
-        && ok "Memory MCP configurado" || warn "No se pudo configurar Memory MCP")
+  # Remove old Memory MCP if present
+  if claude mcp list 2>&1 | grep -q "memory"; then
+    claude mcp remove memory --scope user 2>&1 || true
+    ok "Memory MCP removido (reemplazado por ChromaDB)"
+  fi
 
+  # ChromaDB MCP
+  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
+    ok "ChromaDB MCP ya configurado"
+  elif [ -f "$MCP_DEST/server.py" ]; then
+    RUN_CMD="python $MCP_DEST/server.py"
+    [ -n "$UV" ] && RUN_CMD="uv run --directory $MCP_DEST python server.py"
+    claude mcp add --scope user -e CHROMADB_PATH="$CLAUDE_DIR/chromadb" \
+      chromadb-knowledge -- $RUN_CMD 2>&1 \
+      && ok "ChromaDB MCP configurado" || warn "No se pudo configurar ChromaDB MCP"
+  fi
+
+  # context7 MCP
   claude mcp list 2>&1 | grep -q "context7" \
     && ok "context7 MCP ya configurado" \
     || (claude mcp add --scope user \
         context7 -- npx -y @upstash/context7-mcp@latest 2>&1 \
         && ok "context7 MCP configurado" || warn "No se pudo configurar context7")
+
+  # Migrate knowledge.json if exists
+  if [ -f "$CLAUDE_DIR/knowledge.json" ] && [ ! -f "$CLAUDE_DIR/chromadb/chroma.sqlite3" ]; then
+    step "[WSL] Migrando knowledge.json a ChromaDB..."
+    if [ -n "$UV" ]; then
+      (cd "$MCP_DEST" && "$UV" run python migrate_knowledge.py \
+        --source "$CLAUDE_DIR/knowledge.json" --db-path "$CLAUDE_DIR/chromadb" 2>&1) \
+        && ok "Migración completada" || warn "Migración falló"
+    elif [ -n "$PYTHON" ]; then
+      $PYTHON "$MCP_DEST/migrate_knowledge.py" \
+        --source "$CLAUDE_DIR/knowledge.json" --db-path "$CLAUDE_DIR/chromadb" 2>&1 \
+        && ok "Migración completada" || warn "Migración falló"
+    fi
+  fi
 else
   warn "Claude Code no encontrado en WSL — MCP no configurado"
 fi
@@ -441,8 +525,8 @@ echo "  $ENV_LABEL:"
 echo "    Agentes:    ${LOCAL_AGENTS:-0} → ~/.claude/agents/"
 echo "    Skills:     ${LOCAL_SKILLS:-0} → ~/.claude/commands/"
 echo "    Excalidraw: $([ -n "$UV" ] && echo 'instalado' || echo 'pendiente')"
-echo "    ChromaDB:   $([ -n "$PYTHON" ] && $PYTHON -c 'import chromadb; print("v" + chromadb.__version__)' 2>/dev/null || echo 'pendiente')"
-echo "    MCP:        Memory + context7"
+echo "    ChromaDB MCP: $([ -f "$HOME/.claude/chromadb-mcp/server.py" ] && echo 'instalado' || echo 'pendiente')"
+echo "    MCP:        ChromaDB + context7"
 
 if $IS_WINDOWS && $HAS_WSL; then
   echo ""
