@@ -142,10 +142,8 @@ If no GitHub data is present (plain text task from user), proceed normally witho
                                                * only if security-sensitive
 ```
 
-Skip rules: `research` → stop after Phase 1. `spike` → see Special Flows.
-
-**MANDATORY — FULL PIPELINE FOR ALL DEVELOPMENT TASKS:**
-Any task that produces code (feature, fix, refactor, hotfix, enhancement) MUST run the COMPLETE pipeline: Specify → Design → Implement → Verify (tester + qa in parallel) → Delivery → Knowledge Save. No exceptions. No shortcuts. No skipping phases based on complexity classification. The only tasks that skip phases are `research` (stops after Design) and `spike` (see Special Flows).
+**MANDATORY — FULL PIPELINE BY DEFAULT:**
+Every task runs the COMPLETE pipeline: Specify → Design → Implement → Verify (tester + qa in parallel) → Delivery → Knowledge Save. You NEVER decide on your own to skip phases. The ONLY reason to skip a phase is if the user explicitly asks for it (e.g., "skip tests", "don't need design", "just implement"). Without an explicit user request, run every phase. Research and spike have their own flows — see Special Flows.
 
 ---
 
