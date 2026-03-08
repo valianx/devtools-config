@@ -142,9 +142,10 @@ If no GitHub data is present (plain text task from user), proceed normally witho
                                                * only if security-sensitive
 ```
 
-Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1.
+Skip rules: `research` → stop after Phase 1. `spike` → see Special Flows.
 
-**MANDATORY: Phase 3 (Verify) is NEVER skipped.** Every task that reaches Phase 2 (Implementation) MUST go through Phase 3 (tester + qa in parallel). No exceptions — not for simple tasks, not for hotfixes, not for time pressure. If you implemented code, you verify it.
+**MANDATORY — FULL PIPELINE FOR ALL DEVELOPMENT TASKS:**
+Any task that produces code (feature, fix, refactor, hotfix, enhancement) MUST run the COMPLETE pipeline: Specify → Design → Implement → Verify (tester + qa in parallel) → Delivery → Knowledge Save. No exceptions. No shortcuts. No skipping phases based on complexity classification. The only tasks that skip phases are `research` (stops after Design) and `spike` (see Special Flows).
 
 ---
 
@@ -175,7 +176,7 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 5. **MANDATORY — Move GitHub issue to "In Progress"** on the project board using `gh project list`, `gh project field-list`, `gh project item-list`, and `gh project item-edit`. If any command fails, report the error to the user and continue.
 6. **Classify:**
    - **Type:** `feature` | `fix` | `refactor` | `hotfix` | `enhancement` | `research` | `spike`
-   - **Complexity:** `simple` (skip design) | `standard` (full pipeline) | `complex` (extended review)
+   - **Complexity:** `standard` (full pipeline) | `complex` (extended review) — **never classify as `simple`**, all development runs the full pipeline
    - **Security-sensitive:** `true` | `false` — set to `true` if ANY of these apply:
      - Task touches authentication, authorization, or session management
      - Task handles secrets, tokens, API keys, or credentials
@@ -191,7 +192,7 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
    - If all exist → proceed normally
 8. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
 9. **If type is `spike`**, jump to **Spike Flow** in Special Flows section.
-10. **Announce** to the user: task classified, proceeding to SPECIFY (or skipping if hotfix/simple).
+10. **Announce** to the user: task classified, proceeding to SPECIFY.
 
 ---
 
@@ -199,7 +200,7 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 
 **Owner:** You (orchestrator)
 
-**When to run:** All `standard` and `complex` tasks. Skip for `hotfix` and `simple` fixes (typos, config changes) — go directly to Phase 1 or Phase 2.
+**When to run:** All development tasks. Never skip.
 
 If `/issue` passed a `needs-specify` flag:
 - `needs-specify: true` → **full SPECIFY** (investigate codebase, build AC from scratch, update GitHub issue)
@@ -270,9 +271,7 @@ Write `session-docs/{feature-name}/00-task-intake.md` with these sections:
 - **Clarifications Resolved:** questions → answers
 - **Phase Plan:** checklist of remaining phases
 
-For **hotfix/simple** tasks: write a minimal version with just header, description, scope, and phase plan.
-
-6. **Announce** to the user: spec complete, starting Phase 1 (or Phase 2 if simple).
+6. **Announce** to the user: spec complete, starting Phase 1 (Design).
 
 ---
 
@@ -280,7 +279,7 @@ For **hotfix/simple** tasks: write a minimal version with just header, descripti
 
 **Agent:** `architect`
 
-**When to run:** All tasks except simple fixes (typos, config changes, obvious bugs).
+**When to run:** All development tasks. Never skip.
 
 **Invoke via Task tool** with context:
 - Task description and scope from `00-task-intake.md`
@@ -502,9 +501,10 @@ When multiple tasks are received (batch from `/issue` or `/plan`), track state i
 
 ## Special Flows
 
-### Hotfix (expedited)
-1. Intake (quick) → skip Design → Implementation → Testing (critical paths only) → abbreviated Validation → Delivery
-2. Iteration still applies if tests fail
+### Hotfix
+1. Same full pipeline as any other development task (Specify → Design → Implement → Verify → Delivery)
+2. The only difference: Design can be shorter (focus on the fix, not full architecture)
+3. Iteration still applies if tests fail
 
 ### Security-sensitive (extended)
 1. Design is mandatory with extended security analysis
