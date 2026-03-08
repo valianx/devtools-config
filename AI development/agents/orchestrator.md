@@ -144,6 +144,8 @@ If no GitHub data is present (plain text task from user), proceed normally witho
 
 Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1.
 
+**MANDATORY: Phase 3 (Verify) is NEVER skipped.** Every task that reaches Phase 2 (Implementation) MUST go through Phase 3 (tester + qa in parallel). No exceptions — not for simple tasks, not for hotfixes, not for time pressure. If you implemented code, you verify it.
+
 ---
 
 ## Phase 0a — Intake
@@ -323,6 +325,8 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
   {summary from status block}
 → Next: Phase 3 — Verify (tester + qa in parallel)
 ```
+
+**CRITICAL: Immediately proceed to Phase 3. Do NOT stop here, do NOT ask the user, do NOT report "done". Implementation without verification is incomplete.**
 
 ---
 
