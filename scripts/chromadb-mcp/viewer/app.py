@@ -77,6 +77,7 @@ HTML_PAGE = """<!DOCTYPE html>
   .actions { display: flex; gap: 8px; }
   .btn-delete { padding: 4px 10px; background: transparent; border: 1px solid #f8514930; border-radius: 4px; color: #f85149; cursor: pointer; font-size: 0.75rem; }
   .btn-delete:hover { background: #f8514920; }
+  .entity-date { color: #484f58; font-size: 0.75rem; margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -152,13 +153,14 @@ function render(entities, showSimilarity = false) {
     const typeClass = 'type-' + (e.entityType || 'unknown').replace(/[^a-z]/g, '-');
     const simBadge = showSimilarity && e.similarity != null
       ? `<span class="similarity">${(e.similarity * 100).toFixed(1)}% match</span>` : '';
+    const dateBadge = e.updated_at ? `<span class="entity-date">${formatDate(e.updated_at)}</span>` : '';
     const obs = (e.observations || []).map(o => `<li>${escHtml(o)}</li>`).join('');
     const rels = (e.relations || []).map(r =>
       `<span>${escHtml(r.from)} → ${escHtml(r.relationType)} → ${escHtml(r.to)}</span>`
     ).join('');
     return `<div class="entity">
       <div class="entity-header">
-        <div><span class="entity-name">${escHtml(e.name)}</span>${simBadge}</div>
+        <div><span class="entity-name">${escHtml(e.name)}</span>${simBadge}${dateBadge}</div>
         <div class="actions">
           <span class="entity-type ${typeClass}">${escHtml(e.entityType || 'unknown')}</span>
           <button class="btn-delete" onclick="deleteEntity('${escAttr(e.name)}')">eliminar</button>
@@ -172,6 +174,17 @@ function render(entities, showSimilarity = false) {
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escAttr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 86400000) return 'hoy';
+  if (diff < 172800000) return 'ayer';
+  if (diff < 604800000) return `hace ${Math.floor(diff/86400000)} días`;
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 document.getElementById('search').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 loadAll();
@@ -199,6 +212,8 @@ class Handler(BaseHTTPRequestHandler):
                     "name": eid,
                     "entityType": et,
                     "observations": json.loads(meta.get("observations_json", "[]")),
+                    "created_at": meta.get("created_at", ""),
+                    "updated_at": meta.get("updated_at", ""),
                 })
 
             # Get relations for each entity
@@ -217,7 +232,7 @@ class Handler(BaseHTTPRequestHandler):
             for e in entities:
                 e["relations"] = rel_map.get(e["name"], [])
 
-            entities.sort(key=lambda x: x["entityType"])
+            entities.sort(key=lambda x: x.get("updated_at") or x.get("created_at") or "", reverse=True)
             self._respond_json({
                 "entities": entities,
                 "entity_count": len(entities),
@@ -246,6 +261,8 @@ class Handler(BaseHTTPRequestHandler):
                         "entityType": meta.get("entity_type", "unknown"),
                         "observations": json.loads(meta.get("observations_json", "[]")),
                         "similarity": round(1 - dist, 4) if dist is not None else None,
+                        "created_at": meta.get("created_at", ""),
+                        "updated_at": meta.get("updated_at", ""),
                         "relations": [],
                     })
             self._respond_json({"entities": entities})

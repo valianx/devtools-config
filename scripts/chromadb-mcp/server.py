@@ -12,6 +12,7 @@ import functools
 import json
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import chromadb
@@ -79,12 +80,15 @@ def _get_entity(name: str) -> dict | None:
         "name": name,
         "entityType": meta.get("entity_type", "unknown"),
         "observations": json.loads(meta.get("observations_json", "[]")),
+        "created_at": meta.get("created_at"),
+        "updated_at": meta.get("updated_at"),
     }
 
 
 @retry_on_lock()
-def _upsert_entity(name: str, entity_type: str, observations: list[str]):
+def _upsert_entity(name: str, entity_type: str, observations: list[str], preserve_created_at: str | None = None):
     """Insert or update an entity."""
+    now = datetime.now(timezone.utc).isoformat()
     doc_text = "\n".join(observations)
     entities_col.upsert(
         ids=[name],
@@ -93,6 +97,8 @@ def _upsert_entity(name: str, entity_type: str, observations: list[str]):
             "entity_type": entity_type,
             "observation_count": len(observations),
             "observations_json": json.dumps(observations),
+            "created_at": preserve_created_at or now,
+            "updated_at": now,
         }],
     )
 
@@ -122,7 +128,7 @@ def create_entities(entities: list[dict]) -> str:
         if existing:
             # Merge observations (dedup)
             merged = list(dict.fromkeys(existing["observations"] + new_obs))
-            _upsert_entity(name, entity_type, merged)
+            _upsert_entity(name, entity_type, merged, preserve_created_at=existing["created_at"])
         else:
             _upsert_entity(name, entity_type, new_obs)
             created += 1
@@ -148,7 +154,7 @@ def add_observations(observations: list[dict]) -> str:
         existing = _get_entity(name)
         if existing:
             merged = list(dict.fromkeys(existing["observations"] + new_contents))
-            _upsert_entity(name, existing["entityType"], merged)
+            _upsert_entity(name, existing["entityType"], merged, preserve_created_at=existing["created_at"])
             updated += 1
         else:
             # Create entity if it doesn't exist
@@ -176,7 +182,7 @@ def delete_observations(deletions: list[dict]) -> str:
         existing = _get_entity(name)
         if existing:
             remaining = [o for o in existing["observations"] if o not in to_remove]
-            _upsert_entity(name, existing["entityType"], remaining)
+            _upsert_entity(name, existing["entityType"], remaining, preserve_created_at=existing["created_at"])
             deleted += len(to_remove & set(existing["observations"]))
 
     return json.dumps({"deleted": deleted})
