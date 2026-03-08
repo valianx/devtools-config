@@ -34,6 +34,7 @@ Session-docs is the communication channel between agents. Each agent reads previ
 ```
 session-docs/{feature-name}/
   00-state.md              ← you write this (orchestrator) — pipeline checkpoint
+  00-knowledge-context.md  ← you write this (orchestrator) — knowledge graph results
   00-execution-log.md      ← all agents append to this
   00-task-intake.md        ← you write this (orchestrator)
   00-init.md               ← init (bootstrap report)
@@ -82,9 +83,10 @@ After EVERY phase transition, update `session-docs/{feature-name}/00-state.md`. 
 | architect | 1-design | success | proposed repository pattern |
 
 ## Hot Context
-<!-- Knowledge discovered in THIS pipeline run that subsequent agents need.
-     Pass relevant items to each agent invocation. -->
-- {insight relevant to future phases}
+<!-- Pipeline-specific insights discovered DURING this run (not from knowledge graph).
+     Example: "implementer found that DB uses soft deletes", "auth middleware already validates JWT".
+     Knowledge graph results are in 00-knowledge-context.md — agents read that file directly. -->
+- {insight from this pipeline run}
 
 ## Recovery Instructions
 If reading this after context compaction:
@@ -98,7 +100,7 @@ If reading this after context compaction:
 - On happy path: update status, add agent result row, proceed
 - On failure: record failure details, iteration count, what needs fixing
 - Always keep "Recovery Instructions" current with the exact next step
-- Keep "Hot Context" updated with cross-cutting insights (e.g., "DB uses soft deletes", "auth middleware already validates JWT")
+- Keep "Hot Context" updated with pipeline-specific insights only (e.g., "DB uses soft deletes", "auth middleware already validates JWT"). Knowledge graph results go in `00-knowledge-context.md`, not here.
 
 ---
 
@@ -149,7 +151,19 @@ Skip rules: `hotfix`/`simple` → skip Design. `research` → stop after Phase 1
 **Owner:** You (orchestrator)
 
 1. **Check for existing pipeline** — use Glob to check if `session-docs/{feature-name}/00-state.md` already exists with `status: in_progress` or `status: iterating`. If found, warn the user: "A pipeline for '{feature-name}' is already active at Phase {N}. Use `/resume {feature-name}` to continue it, or confirm you want to start fresh." Wait for confirmation before proceeding. This prevents duplicate pipelines for the same feature.
-2. **Query knowledge graph** — before analyzing the task, search for related knowledge from past pipelines. Use the ChromaDB MCP tools (if available) to `search_nodes` with terms related to the project name, technologies, or components mentioned in the task. ChromaDB uses semantic search (vector embeddings), so natural language queries work well — e.g., "Next.js authentication patterns" or "Prisma serverless gotchas". Pass any relevant findings as Hot Context to downstream agents. If ChromaDB MCP is not available, skip silently and continue.
+2. **Query knowledge graph and write to file** — search for related knowledge from past pipelines. Use the ChromaDB MCP tools (if available) to `search_nodes` with 2-3 queries related to the project name, technologies, or components mentioned in the task. ChromaDB uses semantic search, so natural language queries work well — e.g., "Next.js authentication patterns" or "Prisma serverless gotchas". If results are found, write them to `session-docs/{feature-name}/00-knowledge-context.md`:
+   ```markdown
+   # Knowledge Context
+   <!-- Auto-generated from ChromaDB knowledge graph. Agents: read this for relevant past insights. -->
+
+   ## Relevant entities
+   - **{entity-name}** ({entityType}): {observation summary}
+   - ...
+
+   ## Relevant relations
+   - {from} → {relationType} → {to}
+   ```
+   Then **forget the results** — do NOT keep them in your context or Hot Context. Downstream agents will read this file directly when they need it. If ChromaDB MCP is not available or no relevant results found, skip — do not create the file.
 3. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
 4. **If GitHub issue data is present:**
    - Use the issue title as feature name (kebab-case)
@@ -270,7 +284,7 @@ For **hotfix/simple** tasks: write a minimal version with just header, descripti
 - Task description and scope from `00-task-intake.md`
 - Feature name for session-docs
 - Any relevant file paths or code references
-- Hot Context items from `00-state.md` (if any)
+- Reference to `00-knowledge-context.md` (if it exists — agent reads it directly for past insights)
 
 **Gate (status-block):** The architect returns a compact status block. If `status: success` → update `00-state.md`, add architect result to Agent Results table, extract any hot context insights from summary, proceed to Phase 2. If `status: failed` or `status: blocked` → read `01-architecture.md` to understand the issue and decide how to proceed.
 
@@ -294,7 +308,7 @@ For **hotfix/simple** tasks: write a minimal version with just header, descripti
 - Feature name for session-docs
 - Brief summary of architecture decisions (from architect's status block summary, NOT from re-reading 01-architecture.md)
 - List of acceptance criteria
-- Hot Context items from `00-state.md`
+- Reference to `00-knowledge-context.md` (if it exists — agent reads it directly)
 
 **Gate (status-block):** The implementer returns a compact status block. If `status: success` → update `00-state.md`, add result to Agent Results table, extract hot context (e.g., new dependencies, gotchas), proceed to Phase 3. If `status: failed` → read `02-implementation.md` to understand the issue.
 
@@ -317,9 +331,9 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
 **Agents:** `tester` + `qa` (validate mode) + `security` (conditional) — **launched in parallel**
 
 Launch agents simultaneously using Task tool calls in the same message:
-- **tester**: feature name, list of files created/modified (from implementer's status block summary), **acceptance criteria from `00-task-intake.md`** (the tester must map each AC to at least one test), Hot Context from `00-state.md`
+- **tester**: feature name, list of files created/modified (from implementer's status block summary), **acceptance criteria from `00-task-intake.md`** (the tester must map each AC to at least one test), reference to `00-knowledge-context.md` if it exists
 - **qa** (validate mode): feature name, summary of what was implemented (from implementer's status block summary)
-- **security** (pipeline mode, **only if `security-sensitive: true`**): feature name, list of files created/modified, summary of what was implemented, Hot Context from `00-state.md`. Instruct: "This is pipeline mode — focus on the changed files and their security implications."
+- **security** (pipeline mode, **only if `security-sensitive: true`**): feature name, list of files created/modified, summary of what was implemented, reference to `00-knowledge-context.md` if it exists. Instruct: "This is pipeline mode — focus on the changed files and their security implications."
 
 **Gate (status-block):** All agents return compact status blocks. Read all:
 - If all `status: success` → update `00-state.md`, proceed to Phase 4
@@ -352,7 +366,7 @@ Determine the root cause by reading the failing agent's session-docs:
    - Failing test names and error messages (from `03-testing.md`)
    - Failed AC with file references (from `04-validation.md`)
    - Security vulnerabilities with file:line and remediation (from `04-security.md`)
-2. Route to `implementer` with the merged brief + Hot Context
+2. Route to `implementer` with the merged brief
 3. After fix → **re-run all agents in parallel** (repeat Phase 3, including security if it was active)
 
 **Case B — Design issue** (architecture doesn't support a requirement):
@@ -366,7 +380,7 @@ Determine the root cause by reading the failing agent's session-docs:
 
 **Case D — Security-only failures** (tests and QA pass, but security finds Critical/High issues):
 1. Extract security findings with file:line references and concrete remediations from `04-security.md`
-2. Route to `implementer` with the security brief + Hot Context
+2. Route to `implementer` with the security brief
 3. After fix → **re-run security agent only** (tester+qa already passed; re-run them only if implementer changed test-relevant code)
 
 **Max 3 iterations.** Each round-trip (implementer fixes → agents re-run) = 1 iteration. Update `00-state.md` iteration count at each loop. If exceeded, try an alternative approach or simplify scope. Escalate to user as last resort.
@@ -382,7 +396,6 @@ Determine the root cause by reading the failing agent's session-docs:
 **Invoke via Task tool** with context:
 - Feature name for session-docs
 - Summary of what was built, tested, and validated (from status block summaries, NOT re-reading session-docs)
-- Hot Context from `00-state.md`
 
 **Gate (status-block):** The delivery agent returns a compact status block. If `status: success` → update `00-state.md` with branch, version, and PR info, proceed to Phase 5. If `status: failed` → report to the user.
 
@@ -598,7 +611,7 @@ On failure or iteration:
 - Feature name (for session-docs path)
 - Task type and scope
 - Brief summary from previous agent's status block (NOT full session-docs content)
-- Hot Context items from `00-state.md` relevant to this agent
+- Reference to `00-knowledge-context.md` (if it exists — agent reads it directly) relevant to this agent
 - What you expect from this agent
 - If iterating: what failed and what needs to change
 
