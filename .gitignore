@@ -5,4 +5,5 @@ bun.lock
 
 # Claude Code local settings (may contain API keys)
 **/.claude/settings.local.json
-/session-docs
+/session-docs__pycache__/
+*.pyc

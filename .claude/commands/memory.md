@@ -8,7 +8,7 @@ Analyze the input: $ARGUMENTS
 
 ### `search <query>` — Search entities by text
 
-1. Use Memory MCP `search_nodes` with the query
+1. Use ChromaDB MCP `search_nodes` with the query
 2. Display results as a table:
    ```
    | Entity | Type | Observations (preview) |
@@ -19,7 +19,7 @@ Analyze the input: $ARGUMENTS
 
 ### `list [type]` — List all entities
 
-1. Use Memory MCP `read_graph` to get all entities
+1. Use ChromaDB MCP `read_graph` to get all entities
 2. If `type` provided (pattern/error/constraint/decision/tool-gotcha), filter by entityType
 3. Display as table sorted by type:
    ```
@@ -30,7 +30,7 @@ Analyze the input: $ARGUMENTS
 
 ### `show <entity-name>` — Show full entity details
 
-1. Use Memory MCP `open_nodes` with the entity name
+1. Use ChromaDB MCP `open_nodes` with the entity name
 2. Display all fields:
    ```
    Entity: {name}
@@ -47,7 +47,7 @@ Analyze the input: $ARGUMENTS
 
 ### `stats` — Knowledge Graph statistics
 
-1. Use Memory MCP `read_graph` to get everything
+1. Use ChromaDB MCP `read_graph` to get everything
 2. Display:
    ```
    Knowledge Graph Stats
@@ -69,7 +69,7 @@ Analyze the input: $ARGUMENTS
 
 ### `prune` — Find candidates for removal
 
-1. Use Memory MCP `read_graph` to get everything
+1. Use ChromaDB MCP `read_graph` to get everything
 2. Analyze each entity for staleness:
    - Parse dates from observations (look for YYYY-MM-DD patterns)
    - Flag entities with no date or oldest date > 6 months ago
@@ -90,11 +90,11 @@ Analyze the input: $ARGUMENTS
    - {entity-name}
    ```
 4. Ask user: "Delete any of these? List entity names separated by commas, or 'none'."
-5. If user confirms → use Memory MCP `delete_entities` for each confirmed entity
+5. If user confirms → use ChromaDB MCP `delete_entities` for each confirmed entity
 
 ### `consolidate` — Merge similar entities
 
-1. Use Memory MCP `read_graph`
+1. Use ChromaDB MCP `read_graph`
 2. Find entities that could be merged:
    - Same type + overlapping observations
    - Same technology/library mentioned
@@ -139,7 +139,7 @@ Examples:
 
 ## Error Handling
 
-- If Memory MCP is not available → "Memory MCP server is not running. Check your Claude Code MCP configuration."
+- If ChromaDB MCP is not available → "ChromaDB MCP server is not running. Check your Claude Code MCP configuration."
 - If `read_graph` returns empty → "Knowledge Graph is empty. Entities are created automatically by the orchestrator after successful pipelines."
 - If `delete_entities` fails → report the error, do not retry
 
@@ -148,6 +148,6 @@ Examples:
 ## Important
 
 - This skill does NOT route through the orchestrator
-- Uses Memory MCP tools directly: `search_nodes`, `read_graph`, `open_nodes`, `create_entities`, `add_observations`, `delete_entities`, `delete_observations`, `create_relations`, `delete_relations`
+- Uses ChromaDB MCP tools directly: `search_nodes`, `read_graph`, `open_nodes`, `create_entities`, `add_observations`, `delete_entities`, `delete_observations`, `create_relations`, `delete_relations`
 - Destructive actions (delete, merge) always require user confirmation
 - Never auto-prune or auto-consolidate without asking
