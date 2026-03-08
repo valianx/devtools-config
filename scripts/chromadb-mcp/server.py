@@ -8,8 +8,10 @@ for persistent storage with semantic search capabilities.
 Environment variables:
     CHROMADB_PATH  — path to ChromaDB persistent storage (default: ~/.claude/chromadb)
 """
+import functools
 import json
 import os
+import time
 from pathlib import Path
 
 import chromadb
@@ -45,6 +47,26 @@ mcp = FastMCP("chromadb-knowledge")
 
 
 # ---------------------------------------------------------------------------
+# Retry decorator for SQLite lock handling (shared DB between Windows/WSL)
+# ---------------------------------------------------------------------------
+def retry_on_lock(max_retries: int = 3, delay_ms: int = 200):
+    """Retry a function on SQLite database lock errors."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if "database is locked" in str(e) and attempt < max_retries:
+                        time.sleep(delay_ms / 1000)
+                        continue
+                    raise
+        return wrapper
+    return decorator
+
+
+# ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
 def _get_entity(name: str) -> dict | None:
@@ -60,6 +82,7 @@ def _get_entity(name: str) -> dict | None:
     }
 
 
+@retry_on_lock()
 def _upsert_entity(name: str, entity_type: str, observations: list[str]):
     """Insert or update an entity."""
     doc_text = "\n".join(observations)
@@ -79,6 +102,7 @@ def _upsert_entity(name: str, entity_type: str, observations: list[str]):
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
+@retry_on_lock()
 def create_entities(entities: list[dict]) -> str:
     """Create new entities in the knowledge graph.
 
@@ -107,6 +131,7 @@ def create_entities(entities: list[dict]) -> str:
 
 
 @mcp.tool()
+@retry_on_lock()
 def add_observations(observations: list[dict]) -> str:
     """Add observations to existing entities.
 
@@ -134,6 +159,7 @@ def add_observations(observations: list[dict]) -> str:
 
 
 @mcp.tool()
+@retry_on_lock()
 def delete_observations(deletions: list[dict]) -> str:
     """Remove specific observations from entities.
 
@@ -157,6 +183,7 @@ def delete_observations(deletions: list[dict]) -> str:
 
 
 @mcp.tool()
+@retry_on_lock()
 def delete_entities(entityNames: list[str]) -> str:
     """Delete entities from the knowledge graph by name.
 
@@ -188,6 +215,7 @@ def delete_entities(entityNames: list[str]) -> str:
 
 
 @mcp.tool()
+@retry_on_lock()
 def create_relations(relations: list[dict]) -> str:
     """Create relations between entities.
 
@@ -220,6 +248,7 @@ def create_relations(relations: list[dict]) -> str:
 
 
 @mcp.tool()
+@retry_on_lock()
 def delete_relations(relations: list[dict]) -> str:
     """Delete relations from the knowledge graph.
 
