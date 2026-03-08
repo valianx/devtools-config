@@ -132,9 +132,11 @@ Este directorio **es la memoria y personalidad del agente**. Es un repositorio g
 
 Están en `~/.openclaw/workspace/skills/` y respaldadas en este repo bajo `skills/`:
 
+- **`prompt-crafter`** ⚡ — Craftea prompts estructurados para Claude Code. Conversa con el usuario, clarifica requisitos, elige el skill apropiado (`/issue`, `/plan`, `/design`, etc.) y envía via tmux. **Uso obligatorio siempre que Mario pida trabajo de desarrollo**, especialmente por Telegram.
 - **`tmux-wsl`** — Orquestación de sesiones tmux en WSL2 (variante del skill tmux estándar)
-- **`prompt-crafter`** — Craftea prompts estructurados para Claude Code. Conversa con el usuario, clarifica requisitos, elige el skill apropiado (/issue, /plan, /design, etc.) y envía via tmux
 - **`openai-whisper-api`** — Transcripción de audio vía OpenAI Whisper API
+
+> ⚡ **`prompt-crafter`** es el primer paso antes de cualquier tarea de código — nunca saltárselo.
 
 Para restaurarlas:
 ```bash
