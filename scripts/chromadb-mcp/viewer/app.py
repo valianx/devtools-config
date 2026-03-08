@@ -153,7 +153,7 @@ function render(entities, showSimilarity = false) {
     const typeClass = 'type-' + (e.entityType || 'unknown').replace(/[^a-z]/g, '-');
     const simBadge = showSimilarity && e.similarity != null
       ? `<span class="similarity">${(e.similarity * 100).toFixed(1)}% match</span>` : '';
-    const dateBadge = e.updated_at ? `<span class="entity-date">${formatDate(e.updated_at)}</span>` : '';
+    const dateBadge = e.created_at ? `<span class="entity-date">${formatDate(e.created_at)}</span>` : '';
     const obs = (e.observations || []).map(o => `<li>${escHtml(o)}</li>`).join('');
     const rels = (e.relations || []).map(r =>
       `<span>${escHtml(r.from)} → ${escHtml(r.relationType)} → ${escHtml(r.to)}</span>`
@@ -178,12 +178,9 @@ function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d)) return '';
-  const now = new Date();
-  const diff = now - d;
-  if (diff < 86400000) return 'hoy';
-  if (diff < 172800000) return 'ayer';
-  if (diff < 604800000) return `hace ${Math.floor(diff/86400000)} días`;
-  return d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+  const time = d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${date} ${time}`;
 }
 
 document.getElementById('search').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });

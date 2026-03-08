@@ -36,6 +36,23 @@ Analyze the input: $ARGUMENTS
    ```
 3. Report result
 
+### `restart` — Restart the viewer
+
+1. Kill existing process:
+   ```bash
+   pkill -f "viewer/app.py" 2>/dev/null || taskkill //F //IM python.exe //FI "WINDOWTITLE eq *app.py*" 2>/dev/null
+   ```
+2. Wait 1 second, then start:
+   ```bash
+   sleep 1 && cd ~/.claude/chromadb-mcp/viewer && uv run --directory ~/.claude/chromadb-mcp python viewer/app.py --db-path ~/.claude/chromadb &
+   ```
+3. Wait 2 seconds, verify:
+   ```bash
+   curl -s http://localhost:8420/ >/dev/null 2>&1 && echo "OK" || echo "FAILED"
+   ```
+4. If OK → "Knowledge Graph Viewer reiniciado en http://localhost:8420"
+5. If FAILED → report the error
+
 ### `status` — Check if running
 
 1. ```bash
@@ -52,6 +69,7 @@ Usage: /kg-viewer <action>
 Actions:
   start    Levantar el viewer web en http://localhost:8420
   stop     Detener el viewer
+  restart  Reiniciar el viewer (stop + start)
   status   Verificar si está corriendo
 
 El viewer muestra todas las entities del Knowledge Graph con búsqueda
