@@ -133,6 +133,7 @@ Este directorio **es la memoria y personalidad del agente**. Es un repositorio g
 Están en `~/.openclaw/workspace/skills/` y respaldadas en este repo bajo `skills/`:
 
 - **`tmux-wsl`** — Orquestación de sesiones tmux en WSL2 (variante del skill tmux estándar)
+- **`prompt-crafter`** — Craftea prompts estructurados para Claude Code. Conversa con el usuario, clarifica requisitos, elige el skill apropiado (/issue, /plan, /design, etc.) y envía via tmux
 - **`openai-whisper-api`** — Transcripción de audio vía OpenAI Whisper API
 
 Para restaurarlas:
@@ -201,6 +202,25 @@ git clone <repo-del-workspace> .
 ```bash
 openclaw gateway start
 ```
+
+---
+
+## Hooks — Notificaciones de Claude Code a OpenClaw
+
+Claude Code puede notificar a OpenClaw via HTTP hooks cuando:
+- **Terminó el trabajo** (`Stop`) — incluye `last_assistant_message` con el resumen
+- **Necesita input del usuario** (`Notification`) — permisos o preguntas
+- **Falló una herramienta** (`PostToolUseFailure`) — incluye error y tool name
+
+La config está en `hooks-config.json`. Para activarla, copiar al settings de Claude Code:
+
+```bash
+# Global (todos los proyectos)
+cp hooks-config.json ~/.claude/settings.json
+# O mergear con settings existentes si ya hay config
+```
+
+El endpoint `http://localhost:18789/claude-events` debe existir en OpenClaw. Los hooks envían POST con JSON incluyendo `session_id`, `hook_event_name`, y los datos relevantes del evento. El header `X-Event-Type` facilita el routing en el gateway.
 
 ---
 
