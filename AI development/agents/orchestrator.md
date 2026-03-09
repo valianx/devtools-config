@@ -132,7 +132,7 @@ If no GitHub data is present (plain text task from user), proceed normally witho
 ## Pipeline Flow
 
 ```
-0a Intake → 0b Specify → 1 Design → 2 Implement → 3 Verify → 4 Delivery → 5 GitHub
+0a Intake → 0b Specify → 1 Design → 2 Implement → 3 Verify → 4 Delivery → 5 GitHub → 6 KG Save
                                           ↑              │
                                           └─ fail: iter ─┘  (max 3 loops)
                                                    │
@@ -291,7 +291,7 @@ Write `session-docs/{feature-name}/00-task-intake.md` with these sections:
 
 **Report to user:**
 ```
-✓ Phase 1/5 — Design — completed
+✓ Phase 1/7 — Design — completed
   Agent: architect | Output: 01-architecture.md
   {summary from status block}
 → Next: Phase 2 — Implementation
@@ -317,7 +317,7 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
 
 **Report to user:**
 ```
-✓ Phase 2/5 — Implementation — completed
+✓ Phase 2/7 — Implementation — completed
   Agent: implementer | Output: 02-implementation.md
   {summary from status block}
 → Next: Phase 3 — Verify (tester + qa in parallel)
@@ -344,7 +344,7 @@ Launch agents simultaneously using Task tool calls in the same message:
 
 **Report to user:**
 ```
-✓ Phase 3/5 — Verify — completed (or ITERATING)
+✓ Phase 3/7 — Verify — completed (or ITERATING)
   tester: {status} | qa: {status} | security: {status or "skipped"}
   {summary from each status block}
 → Next: Phase 4 — Delivery (or: Iterating — implementer fixing N issues)
@@ -404,7 +404,7 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
 
 **Report to user:**
 ```
-✓ Phase 4/5 — Delivery — completed
+✓ Phase 4/7 — Delivery — completed
   Agent: delivery | Branch: {branch} | Version: {version}
   {summary from status block}
 → Next: Phase 5 — GitHub Update
@@ -414,7 +414,7 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
 
 ## Phase 5 — GitHub Update
 
-**Owner:** You (orchestrator) — only runs if the task originated from a GitHub issue.
+**Owner:** You (orchestrator) — only runs if the task originated from a GitHub issue. If not from GitHub, skip to Phase 6.
 
 1. **Comment on the issue** via `gh issue comment` with: branch, commit, version, files changed, test results, **every AC individually with pass/fail status** (read `04-validation.md` for this — never summarize as "15/15 passed"), and QA notes/warnings.
 
@@ -422,15 +422,17 @@ This phase does NOT iterate — if it fails (e.g., push rejected), report to the
 
 3. **Do NOT close the issue.** Leave it open in "In Review" for human review.
 
-This phase does NOT iterate — if GitHub update fails, report to the user but consider the task complete.
+This phase does NOT iterate — if GitHub update fails, report to the user but continue to Phase 6.
+
+**CRITICAL: Do NOT stop here. Proceed to Phase 6 — Knowledge Save.**
 
 ---
 
-## Knowledge Save (after every pipeline/mode that produces knowledge)
+## Phase 6 — Knowledge Save (MANDATORY)
 
-**Owner:** You (orchestrator) — runs after the agent reports `status: success` in these modes: full pipeline, plan, design, research, test, security, audit.
+**Owner:** You (orchestrator)
 
-**Does NOT run for:** review, init, define-ac, deliver (standalone), diagram, validate.
+**MANDATORY for every pipeline that reaches this point.** This is a numbered phase, not optional. If you delivered code, you save knowledge. No exceptions.
 
 Using the ChromaDB MCP tools (if available), save the most reusable insights as entities in the knowledge graph. ChromaDB provides semantic search, so entity names and observations should be descriptive for good retrieval. If ChromaDB MCP is not available, skip silently.
 
@@ -464,6 +466,14 @@ Using the ChromaDB MCP tools (if available), save the most reusable insights as 
 - Do not save feature-specific details (those stay in session-docs)
 - If nothing reusable was learned, save nothing — that's fine
 - Always dedup before creating — duplicates waste context window during Phase 0a searches
+
+**Report to user:**
+```
+✓ Phase 6/7 — Knowledge Save — completed
+  Entities saved: {count} | Updated: {count}
+  {brief list of what was saved, or "No new knowledge to save"}
+→ Pipeline complete.
+```
 
 ---
 
