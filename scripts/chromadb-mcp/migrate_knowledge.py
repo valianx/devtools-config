@@ -58,15 +58,27 @@ def migrate(source: str, db_path: str):
         metadata={"hnsw:space": "cosine"},
     )
 
-    # Migrate entities
+    # Migrate entities (merge observations with existing)
+    created = 0
+    updated = 0
     for entity in entities:
         name = entity["name"]
         entity_type = entity.get("entityType", "unknown")
-        observations = entity.get("observations", [])
+        new_obs = entity.get("observations", [])
 
-        # Each entity becomes a document with all observations joined
+        # Check if entity already exists in ChromaDB
+        existing = entities_col.get(ids=[name])
+        if existing["ids"]:
+            # Merge observations (dedup)
+            old_obs = json.loads(existing["metadatas"][0].get("observations_json", "[]"))
+            merged = list(dict.fromkeys(old_obs + new_obs))
+            observations = merged
+            updated += 1
+        else:
+            observations = new_obs
+            created += 1
+
         doc_text = "\n".join(observations)
-
         entities_col.upsert(
             ids=[name],
             documents=[doc_text],
@@ -77,7 +89,7 @@ def migrate(source: str, db_path: str):
             }],
         )
 
-    print(f"Migrated {len(entities)} entities to ChromaDB")
+    print(f"Migrated entities: {created} created, {updated} updated (observations merged)")
 
     # Migrate relations
     for i, rel in enumerate(relations):

@@ -256,26 +256,25 @@ configure_mcp() {
     return
   fi
 
-  # ChromaDB MCP (reemplaza Memory MCP)
-  if claude mcp list 2>&1 | grep -q "memory"; then
-    # Migrate: remove old Memory MCP, add ChromaDB MCP
-    warn "Memory MCP detectado — reemplazando con ChromaDB MCP..."
-    claude mcp remove memory --scope user 2>&1 || true
+  # ChromaDB MCP — registrado como "memory" para reemplazar el built-in
+  # Remove old chromadb-knowledge name if present (legacy)
+  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
+    claude mcp remove chromadb-knowledge --scope user 2>&1 || true
   fi
 
   local mcp_server="$claude_dir/chromadb-mcp/server.py"
-  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
-    ok "ChromaDB MCP ya configurado"
-  elif [ -f "$mcp_server" ]; then
+  if [ -f "$mcp_server" ]; then
+    # Always re-register to ensure correct config
+    claude mcp remove memory --scope user 2>&1 || true
     local run_cmd
     if [ -n "$UV" ]; then
       run_cmd="uv run --directory $claude_dir/chromadb-mcp python server.py"
     else
       run_cmd="python $mcp_server"
     fi
-    claude mcp add --scope user -e CHROMADB_PATH="$claude_dir/chromadb" \
-      chromadb-knowledge -- $run_cmd 2>&1 \
-      && ok "ChromaDB MCP configurado" \
+    claude mcp add memory --scope user -e CHROMADB_PATH="$claude_dir/chromadb" \
+      -- $run_cmd 2>&1 \
+      && ok "ChromaDB MCP registrado como 'memory'" \
       || warn "No se pudo configurar ChromaDB MCP"
   else
     warn "ChromaDB MCP server no encontrado — saltando configuración"
@@ -291,21 +290,21 @@ configure_mcp() {
       || warn "No se pudo configurar context7"
   fi
 
-  # Migrate knowledge.json if it exists and ChromaDB is empty
+  # Migrate knowledge.json if it exists (merge into ChromaDB, then backup)
   local knowledge_file="$claude_dir/knowledge.json"
   local chromadb_dir="$claude_dir/chromadb"
-  if [ -f "$knowledge_file" ] && [ ! -d "$chromadb_dir/chroma.sqlite3" ]; then
-    step "[$env_label] Migrando knowledge.json a ChromaDB..."
+  if [ -f "$knowledge_file" ]; then
+    step "[$env_label] Migrando knowledge.json a ChromaDB (merge)..."
     local migrate_script="$claude_dir/chromadb-mcp/migrate_knowledge.py"
     if [ -f "$migrate_script" ]; then
       if [ -n "$UV" ]; then
         (cd "$claude_dir/chromadb-mcp" && "$UV" run python migrate_knowledge.py \
           --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1) \
-          && ok "Migración completada" \
+          && ok "Migración completada (knowledge.json → .bak)" \
           || warn "Migración falló — knowledge.json conservado"
       elif [ -n "$PYTHON" ]; then
         $PYTHON "$migrate_script" --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1 \
-          && ok "Migración completada" \
+          && ok "Migración completada (knowledge.json → .bak)" \
           || warn "Migración falló — knowledge.json conservado"
       fi
     fi
@@ -471,21 +470,19 @@ fi
 # MCP servers
 step "[WSL] Configurando MCP servers..."
 if command -v claude >/dev/null 2>&1; then
-  # Remove old Memory MCP if present
-  if claude mcp list 2>&1 | grep -q "memory"; then
-    claude mcp remove memory --scope user 2>&1 || true
-    ok "Memory MCP removido (reemplazado por ChromaDB)"
+  # Remove old chromadb-knowledge name if present (legacy)
+  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
+    claude mcp remove chromadb-knowledge --scope user 2>&1 || true
   fi
 
-  # ChromaDB MCP — apunta a la DB de Windows (compartida)
-  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
-    ok "ChromaDB MCP ya configurado"
-  elif [ -f "$MCP_DEST/server.py" ]; then
+  # ChromaDB MCP — registrado como "memory", apunta a la DB de Windows (compartida)
+  if [ -f "$MCP_DEST/server.py" ]; then
+    claude mcp remove memory --scope user 2>&1 || true
     RUN_CMD="python $MCP_DEST/server.py"
     [ -n "$UV" ] && RUN_CMD="uv run --directory $MCP_DEST python server.py"
-    claude mcp add chromadb-knowledge --scope user -e CHROMADB_PATH="$WIN_CHROMADB_PATH" \
+    claude mcp add memory --scope user -e CHROMADB_PATH="$WIN_CHROMADB_PATH" \
       -- $RUN_CMD 2>&1 \
-      && ok "ChromaDB MCP configurado (DB compartida: $WIN_CHROMADB_PATH)" \
+      && ok "ChromaDB MCP registrado como memory (DB: $WIN_CHROMADB_PATH)" \
       || warn "No se pudo configurar ChromaDB MCP"
   fi
 
