@@ -268,9 +268,9 @@ configure_mcp() {
     claude mcp remove memory --scope user 2>&1 || true
     local run_cmd
     if [ -n "$UV" ]; then
-      run_cmd="uv run --directory $claude_dir/chromadb-mcp python server.py"
+      run_cmd="$UV run --directory $claude_dir/chromadb-mcp python server.py"
     else
-      run_cmd="python $mcp_server"
+      run_cmd="$PYTHON $mcp_server"
     fi
     claude mcp add memory --scope user -e CHROMADB_PATH="$claude_dir/chromadb" \
       -- $run_cmd 2>&1 \
@@ -478,8 +478,8 @@ if command -v claude >/dev/null 2>&1; then
   # ChromaDB MCP — registrado como "memory", apunta a la DB de Windows (compartida)
   if [ -f "$MCP_DEST/server.py" ]; then
     claude mcp remove memory --scope user 2>&1 || true
-    RUN_CMD="python $MCP_DEST/server.py"
-    [ -n "$UV" ] && RUN_CMD="uv run --directory $MCP_DEST python server.py"
+    RUN_CMD="$PYTHON $MCP_DEST/server.py"
+    [ -n "$UV" ] && RUN_CMD="$UV run --directory $MCP_DEST python server.py"
     claude mcp add memory --scope user -e CHROMADB_PATH="$WIN_CHROMADB_PATH" \
       -- $RUN_CMD 2>&1 \
       && ok "ChromaDB MCP registrado como memory (DB: $WIN_CHROMADB_PATH)" \

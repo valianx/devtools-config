@@ -290,10 +290,10 @@ Orchestrator ──> gh issue comment (resultados detallados, cada AC con pass/f
 ### Knowledge Save (post-pipeline)
 
 ```
-Orchestrator ──> Memory MCP
+Orchestrator ──> ChromaDB MCP (registrado como "memory")
                     │
                1. Extrae 1-3 insights reutilizables
-               2. Dedup check (search_nodes ANTES de create)
+               2. Dedup check (search_nodes ANTES de create — busqueda semantica)
                3. create_entities solo si no hay match
                4. Auto-consolidate si >100 entities
 ```
@@ -720,16 +720,41 @@ Siempre en `.gitignore` (`/session-docs`).
 ## Sistema de Memoria (3 Capas)
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│  Capa 1: Knowledge Graph MCP (cross-project)                   │
-│  Archivo: ~/.claude/knowledge.json                             │
-│  Quién escribe: orchestrator (post-pipeline)                   │
-│  Quién lee: orchestrator (Phase 0a)                            │
-│  Gestión: /memory (search, prune, consolidate)                 │
-│  Reglas: max 3 entities/pipeline, dedup obligatorio,           │
-│          auto-consolidate a >100 entities                      │
-│  Tipos: pattern | error | constraint | decision | tool-gotcha  │
-└────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│  Capa 1: ChromaDB Knowledge Graph (cross-project)                      │
+│                                                                        │
+│  Backend: ChromaDB PersistentClient (SQLite + embeddings locales)       │
+│  DB: ~/.claude/chromadb/                                               │
+│  Server: ~/.claude/chromadb-mcp/server.py (MCP stdio, registrado       │
+│          como "memory" en Claude Code)                                  │
+│  Source: scripts/chromadb-mcp/ en este repo                            │
+│  Embeddings: all-MiniLM-L6-v2 (local, ~80MB, busqueda semantica)       │
+│  Python: requiere >=3.10, <3.14 (ChromaDB no soporta 3.14+)           │
+│                                                                        │
+│  Quién escribe: orchestrator (post-pipeline)                           │
+│  Quién lee: orchestrator (Phase 0a, busqueda semantica)                │
+│  Gestión: /memory (search, list, show, stats, prune, consolidate)      │
+│  Viewer: /kg-viewer (web UI en localhost:8420)                         │
+│                                                                        │
+│  Reglas: max 3 entities/pipeline, dedup obligatorio                    │
+│          (search_nodes ANTES de create_entities),                       │
+│          auto-consolidate a >100 entities                              │
+│  Tipos: pattern | error | constraint | decision | tool-gotcha          │
+│                                                                        │
+│  Pipelines que escriben: full, plan, design, research, test, security  │
+│  NO escriben: review, init, define-ac, deliver, diagram, validate      │
+│  Graceful degradation: si el MCP no está disponible, skip silently     │
+│                                                                        │
+│  API: compatible con @modelcontextprotocol/server-memory               │
+│  Tools: create_entities, add_observations, delete_observations,        │
+│         delete_entities, create_relations, delete_relations,            │
+│         search_nodes (semantico), open_nodes, read_graph               │
+│                                                                        │
+│  Nota: search_nodes usa busqueda semantica (cosine similarity),        │
+│  no substring. "auth patterns" encuentra "JWT tokens", "login flow"    │
+│                                                                        │
+│  Ver: scripts/chromadb-mcp/README.md para documentación completa       │
+└────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────┐
 │  Capa 2: CLAUDE.md (per-project)                               │
@@ -792,21 +817,34 @@ Siempre en `.gitignore` (`/session-docs`).
 - **Spec-Driven Development (SDD)** — toda issue lleva User Story + AC Given/When/Then + Scope
 - **Iteración mandatoria** — verify falla → arreglar → re-verify (nunca skip, max 3)
 - **Context efficiency** — status blocks compactos, lazy reading, phase checkpointing
-- **Graceful degradation** — si context7, Memory MCP, o `gh` no están disponibles, continuar sin ellos
+- **Graceful degradation** — si context7, ChromaDB MCP, o `gh` no están disponibles, continuar sin ellos
 - **Security gate** — Critical/High bloquean, Medium/Low/Info son warnings
 - **Feature branches** — delivery siempre crea branch, nunca commitea a main
-- **Dedup en Knowledge Graph** — search_nodes antes de create_entities, siempre
+- **Dedup en Knowledge Graph** — search_nodes (semantico) antes de create_entities, siempre
 
 ---
 
 ## Instalación
 
-Los agentes y skills se despliegan en dos ubicaciones:
+Todo se instala con un solo comando:
+
+```bash
+git clone <repo> && cd devtools-config && ./scripts/setup.sh
+```
+
+El setup despliega:
 
 ```
-# Agentes → ~/.claude/agents/
-# Skills  → ~/.claude/commands/ (global) + .claude/commands/ (por proyecto)
-# Excalidraw skill → ~/.claude/skills/excalidraw-diagram/ + .claude/skills/excalidraw-diagram/
+# Agentes       → ~/.claude/agents/
+# Skills        → ~/.claude/commands/ (global) + .claude/commands/ (por proyecto)
+# Excalidraw    → ~/.claude/skills/excalidraw-diagram/
+# ChromaDB MCP  → ~/.claude/chromadb-mcp/ (server + deps)
+# ChromaDB data → ~/.claude/chromadb/ (SQLite + embeddings)
+# MCP servers   → "memory" (ChromaDB) + "context7" registrados en Claude Code
 ```
+
+Si hay un `knowledge.json` del Memory MCP original, el setup lo migra automaticamente a ChromaDB (merge, no sobreescribe).
+
+En Windows con WSL, el setup configura ambos entornos. ChromaDB es compartida (misma DB).
 
 Para validar que todo está sincronizado: `/lint`
