@@ -160,6 +160,17 @@ Append knowledge to `docs/knowledge.md`. Un solo archivo, bullets planos, sin es
 - Max ~30 entries — when approaching the limit, consolidate or remove entries that are now obvious from the code
 - If no knowledge was extracted in Step 4, skip this step
 
+### Step 5c — Archive Spec (if valuable)
+
+If the feature was non-trivial (had >2 AC or documented significant decisions), archive the final spec for future reference:
+
+1. Create `docs/specs/` directory if it doesn't exist
+2. Copy the content of `session-docs/{feature-name}/00-task-intake.md` to `docs/specs/{feature-name}.md`
+3. Add a header line: `**Status:** DELIVERED | **Date:** {date}`
+4. Stage the file: `git add docs/specs/{feature-name}.md`
+
+**Skip if:** the feature was a simple bug fix, hotfix, or had ≤2 AC. Only archive specs that document significant decisions or complex requirements.
+
 ### Step 6 — Update README.md
 
 - Read README.md if it exists
@@ -238,7 +249,7 @@ Read the first match and extract the current version.
 **Stage delivery files (version file is MANDATORY):**
 ```
 git add CLAUDE.md CHANGELOG.md {version-file}
-git add docs/             # only if created/modified in Step 5b
+git add docs/             # only if created/modified in Step 5b or 5c
 git add README.md         # only if modified in Step 6
 git add openapi/openapi.yaml  # only if updated in Step 8
 ```
@@ -323,6 +334,9 @@ Write delivery summary to `session-docs/{feature-name}/05-delivery.md`:
 
 ## docs/knowledge.md Updated
 - {entries added, or "No updates needed"}
+
+## Spec Archived
+- {yes → `docs/specs/{feature-name}.md` | no → "Skipped (≤2 AC)" | N/A}
 
 ## README.md
 - Updated: {yes/no}

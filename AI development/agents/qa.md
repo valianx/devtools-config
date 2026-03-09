@@ -164,7 +164,11 @@ Responsive Criteria:
 
 ## Phase 2 — Implementation Validation (validate mode)
 
-**This phase runs in validate mode (default).** Read `session-docs/{feature-name}/00-task-intake.md` for the acceptance criteria, then read source code and compare against them:
+**This phase runs in validate mode (default).** Read `session-docs/{feature-name}/00-task-intake.md` for the acceptance criteria, then read source code and compare against them.
+
+**AC formats:** Accept both `Given/When/Then` and `VERIFY: {condition}` formats. For VERIFY criteria, check that the code satisfies the stated condition and provide file:line evidence just like GWT criteria.
+
+**Spec annotations:** If any AC still has a `[CONSTRAINT-DISCOVERED]` tag (wasn't reconciled by the orchestrator), treat the annotation as context — validate against the AC as written but note the discrepancy in your report under Warnings.
 
 1. **Verify each criterion** — check the code implements what was specified
 2. **Check test coverage** — ensure tests exist for the defined criteria

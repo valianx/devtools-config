@@ -216,7 +216,7 @@ Use Glob, Grep, and Read to discover:
 
 Construct:
 - **User stories** — As a [user/system], I want [action], so that [benefit]
-- **Acceptance criteria** — formal Given/When/Then format
+- **Acceptance criteria** — formal Given/When/Then format for behavioral criteria, or `VERIFY: {condition}` for non-behavioral criteria (data validation, configuration, performance thresholds, constraints)
 - **Scope** — explicit included/excluded boundaries
 - **Codebase context** — files, patterns, dependencies discovered in Step 1
 - **Ambiguity markers** — mark `[NEEDS CLARIFICATION: question]` for anything unclear or underspecified
@@ -241,7 +241,7 @@ As a {role}, I want {action}, so that {benefit}.
 
 ## Acceptance Criteria
 - [ ] **AC-1:** Given {context}, When {action}, Then {result}
-- [ ] **AC-N:** ...
+- [ ] **AC-N:** VERIFY: {condition that must be true}
 
 ## Scope
 **Included:** {in scope}
@@ -269,7 +269,23 @@ Write `session-docs/{feature-name}/00-task-intake.md` with these sections:
 - **Clarifications Resolved:** questions → answers
 - **Phase Plan:** checklist of remaining phases
 
-6. **Announce** to the user: spec complete, starting Phase 1 (Design).
+### Step 6 — Spec Quality Validation (auto-lint)
+
+Before advancing, automatically validate the spec you just wrote:
+
+1. **AC count:** min 2, max 20. If <2, add criteria. If >20, the feature is too large — split it or ask the user.
+2. **AC format:** every AC must use `Given/When/Then` OR `VERIFY:` format. Flag and fix any that don't match.
+3. **Scope completeness:** both `Included` and `Excluded` must be non-empty. If Excluded is missing, add `**Excluded:** N/A — no explicit exclusions`.
+4. **No unresolved ambiguities:** zero `[NEEDS CLARIFICATION]` markers remaining. If any survived Step 3, block and ask the user.
+5. **AC Summary:** add a quick-reference line at the top of the Acceptance Criteria section:
+   ```
+   **AC Summary:** {N} criteria — {brief comma-separated list of what they cover}
+   ```
+   This helps downstream agents quickly understand scope without reading every AC.
+
+If any check fails (except ambiguities), fix it in-place. This is automatic — do not ask the user. Then announce.
+
+7. **Announce** to the user: spec complete, starting Phase 1 (Design).
 
 ---
 
@@ -284,6 +300,7 @@ Write `session-docs/{feature-name}/00-task-intake.md` with these sections:
 - Feature name for session-docs
 - Any relevant file paths or code references
 - Reference to `00-knowledge-context.md` (if it exists — agent reads it directly for past insights)
+- **Spec feedback instruction:** "If you discover a technical constraint that invalidates or modifies an AC, annotate `00-task-intake.md` with `[CONSTRAINT-DISCOVERED: description]` next to the affected AC. Continue working — the orchestrator will reconcile before verification."
 
 **Gate (status-block):** The architect returns a compact status block. If `status: success` → update `00-state.md`, add architect result to Agent Results table, extract any hot context insights from summary, proceed to Phase 2. If `status: failed` or `status: blocked` → read `01-architecture.md` to understand the issue and decide how to proceed.
 
@@ -308,6 +325,7 @@ Write `session-docs/{feature-name}/00-task-intake.md` with these sections:
 - Brief summary of architecture decisions (from architect's status block summary, NOT from re-reading 01-architecture.md)
 - List of acceptance criteria
 - Reference to `00-knowledge-context.md` (if it exists — agent reads it directly)
+- **Spec feedback instruction:** "If implementation reveals a constraint that affects an AC, annotate `00-task-intake.md` with `[CONSTRAINT-DISCOVERED: description]` next to the affected AC. Make the best implementation decision and keep moving."
 
 **Gate (status-block):** The implementer returns a compact status block. If `status: success` → update `00-state.md`, add result to Agent Results table, extract hot context (e.g., new dependencies, gotchas), proceed to Phase 3. If `status: failed` → read `02-implementation.md` to understand the issue.
 
@@ -324,6 +342,18 @@ If build/lint fails, the implementer fixes it before finishing (internal loop).
 ```
 
 **CRITICAL: Immediately proceed to Phase 3. Do NOT stop here, do NOT ask the user, do NOT report "done". Implementation without verification is incomplete.**
+
+### Spec Reconciliation (between Phase 2 and Phase 3)
+
+Before launching Phase 3, read `00-task-intake.md` and check for `[CONSTRAINT-DISCOVERED]` annotations added by architect or implementer. If found:
+
+1. Review each annotation — understand why the constraint was discovered
+2. Update the affected AC to reflect the discovered constraint (rewrite the AC to match reality)
+3. Remove the `[CONSTRAINT-DISCOVERED]` tag
+4. If any AC was significantly changed, briefly inform the user: "AC-{N} updated: {what changed and why}"
+5. Update the AC Summary line if the scope changed
+
+If no annotations found, proceed immediately to Phase 3.
 
 ---
 
@@ -580,7 +610,7 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
 
    ## Acceptance Criteria
    - [ ] **AC-1:** Given {context}, When {action}, Then {result}
-   - [ ] **AC-2:** Given {context}, When {action}, Then {result}
+   - [ ] **AC-2:** VERIFY: {condition that must be true}
 
    ## Scope
    **Included:** {what's in scope}

@@ -56,6 +56,8 @@ Tests verify the **acceptance criteria** from the spec. They are **ordered by th
 1. **Read the spec** — read `session-docs/{feature-name}/00-task-intake.md` (or AC passed by the orchestrator). Extract the full list of acceptance criteria.
 2. **Map the changes** — read session-docs and git diff to determine what was modified. List every file, service, component, or endpoint that was added or changed.
 3. **AC Coverage Mapping** — for each acceptance criterion, identify which changed file(s) implement it and which test(s) will verify it. Every AC must map to at least one test. If an AC cannot be mapped to a test, flag it.
+   - **AC formats:** Both `Given/When/Then` and `VERIFY: {condition}` are valid. For VERIFY criteria, write a test that asserts the stated condition holds true.
+   - **Large specs (>10 AC):** Group AC by component/area in the AC Coverage table. This helps the orchestrator and QA quickly understand coverage at a glance.
 4. **Order by dependency** — start from the lowest-level changes (utilities, repositories, factories) up to the highest (controllers, pages, orchestrators). **Write tests in this exact order.** Each test file corresponds to a changed file.
 5. **For each changed unit, define:**
    - Which AC it satisfies (reference by AC number)

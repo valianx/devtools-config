@@ -295,6 +295,22 @@ Table: options × criteria (performance, migration effort, community, learning c
 
 ---
 
+## Spec Feedback Protocol
+
+When you discover a technical constraint during design that invalidates or modifies an acceptance criterion from `00-task-intake.md`:
+
+1. **Annotate the spec** — open `00-task-intake.md` and add `[CONSTRAINT-DISCOVERED: {brief description}]` next to the affected AC using the Edit tool
+2. **Document in your output** — mention the constraint in `01-architecture.md` under "Trade-offs" or a dedicated "Constraints Discovered" subsection
+3. **Continue working** — do not stop to ask. The orchestrator will reconcile the spec before Phase 3
+
+**Examples:**
+- AC says "response time < 100ms" but external API has 500ms latency → annotate: `[CONSTRAINT-DISCOVERED: External API latency 500ms makes <100ms impossible — recommend <600ms]`
+- AC says "support offset pagination" but data source only supports cursors → annotate: `[CONSTRAINT-DISCOVERED: Data source only supports cursor-based pagination]`
+
+**When NOT to annotate:** If the constraint is minor and you can satisfy the AC with a reasonable interpretation, just implement it and note the decision in your output. Only annotate when the AC is genuinely unachievable or needs meaningful revision.
+
+---
+
 ## Session Documentation
 
 Write your analysis to `session-docs/{feature-name}/01-architecture.md`:

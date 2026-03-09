@@ -147,6 +147,22 @@ If any check fails, fix it before finishing.
 
 ---
 
+## Spec Feedback Protocol
+
+When implementation reveals a technical constraint that affects an acceptance criterion from `00-task-intake.md`:
+
+1. **Annotate the spec** — open `00-task-intake.md` and add `[CONSTRAINT-DISCOVERED: {brief description}]` next to the affected AC using the Edit tool
+2. **Document in your output** — mention the deviation in `02-implementation.md` under "Deviations from Architecture"
+3. **Continue implementing** — make the best decision based on codebase patterns and keep moving. The orchestrator will reconcile the spec before verification.
+
+**Examples:**
+- AC says "use WebSocket for real-time updates" but the framework only supports SSE → annotate and implement with SSE
+- AC says "batch process 1000 items" but memory limits require chunking → annotate and implement with chunking at 100
+
+**When NOT to annotate:** If you can satisfy the AC with a reasonable interpretation or minor adjustment, just implement it. Only annotate when the AC needs meaningful revision.
+
+---
+
 ## Session Documentation
 
 Write your implementation summary to `session-docs/{feature-name}/02-implementation.md`:
