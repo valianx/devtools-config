@@ -26,9 +26,9 @@ Analyze the input: $ARGUMENTS
 
 ### `stop` — Stop the viewer
 
-1. Find and kill the process:
+1. Find and kill the process by port:
    ```bash
-   pkill -f "viewer/app.py" 2>/dev/null || taskkill //F //IM python.exe //FI "WINDOWTITLE eq *app.py*" 2>/dev/null
+   for pid in $(netstat -ano 2>/dev/null | grep "127.0.0.1:8420.*LISTENING" | awk '{print $5}' | sort -u); do taskkill //F //PID $pid 2>/dev/null; done
    ```
 2. Verify:
    ```bash
@@ -38,9 +38,9 @@ Analyze the input: $ARGUMENTS
 
 ### `restart` — Restart the viewer
 
-1. Kill existing process:
+1. Kill existing process by port:
    ```bash
-   pkill -f "viewer/app.py" 2>/dev/null || taskkill //F //IM python.exe //FI "WINDOWTITLE eq *app.py*" 2>/dev/null
+   for pid in $(netstat -ano 2>/dev/null | grep "127.0.0.1:8420.*LISTENING" | awk '{print $5}' | sort -u); do taskkill //F //PID $pid 2>/dev/null; done
    ```
 2. Wait 1 second, then start:
    ```bash
