@@ -27,6 +27,13 @@
 - Proyectos Zippy → `claude --dangerously-skip-permissions`
 - Código externo / PRs de terceros → `claude` normal (con permisos)
 
+### 6. Verificar que Claude Code recibió y procesó el prompt
+- Después de enviar cualquier prompt via tmux, hacer `capture-pane` y confirmar que el orquestador **comenzó a ejecutar** (aparecen tool calls, `orchestrator(...)`, búsquedas de archivos, etc.)
+- **No basta con que el texto se haya pegado** — Claude Code a veces recibe el texto como "Pasted text" pero no lo procesa hasta recibir un enter adicional
+- Si el texto quedó como paste sin procesar → enviar `C-m` (Enter) adicional y verificar de nuevo
+- Si con enter no funciona → guardar el prompt en un archivo (`/tmp/prompt.md`) y pedirle a Claude Code que lo lea con `cat /tmp/prompt.md` seguido de enter
+- Solo confirmarle a Mario que el trabajo comenzó cuando se vean tool calls o actividad real del orquestador
+
 ### 4. Claude Code notifica via hooks
 - Cuando Claude Code **termina**, envía POST a `localhost:18789/claude-events` con header `X-Event-Type: work-completed` y el campo `last_assistant_message` con el resumen
 - Cuando Claude Code **necesita input** (pregunta o permiso), envía POST con `X-Event-Type: user-input-required` y el campo `message` con lo que necesita
@@ -46,6 +53,7 @@
 - Dar contexto de los comandos antes de ejecutarlos
 - Sin cron ni automatizaciones que generen mensajes
 - Prefiere prompts detallados sobre genéricos
+- **No duplicar mensajes** — una sola respuesta por mensaje, nunca repetir el contenido al final. Si el reply tag `[[reply_to_current]]` está presente, NO repetir el texto debajo — el tag ya lo envía.
 
 ---
 
