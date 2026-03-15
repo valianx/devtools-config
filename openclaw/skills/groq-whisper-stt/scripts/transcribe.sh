@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 Usage:
-  transcribe.sh <audio-file> [--model whisper-1] [--out /path/to/out.txt] [--language en] [--prompt "hint"] [--json]
+  transcribe.sh <audio-file> [--model whisper-large-v3] [--out /path/to/out.txt] [--language en] [--prompt "hint"] [--json]
 EOF
   exit 2
 }
@@ -16,7 +16,7 @@ fi
 in="${1:-}"
 shift || true
 
-model="whisper-1"
+model="whisper-large-v3"
 out=""
 language=""
 prompt=""
@@ -56,8 +56,8 @@ if [[ ! -f "$in" ]]; then
   exit 1
 fi
 
-if [[ "${OPENAI_API_KEY:-}" == "" ]]; then
-  echo "Missing OPENAI_API_KEY" >&2
+if [[ "${GROQ_API_KEY:-}" == "" ]]; then
+  echo "Missing GROQ_API_KEY" >&2
   exit 1
 fi
 
@@ -72,11 +72,8 @@ fi
 
 mkdir -p "$(dirname "$out")"
 
-base_url="${OPENAI_BASE_URL:-https://api.openai.com/v1}"
-base_url="${base_url%/}"
-
-curl -sS "${base_url}/audio/transcriptions" \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
+curl -sS "https://api.groq.com/openai/v1/audio/transcriptions" \
+  -H "Authorization: Bearer $GROQ_API_KEY" \
   -H "Accept: application/json" \
   -F "file=@${in}" \
   -F "model=${model}" \

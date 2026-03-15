@@ -1,7 +1,7 @@
 {
   "version": 1,
   "registry": "https://clawhub.ai",
-  "slug": "openai-whisper-api",
-  "installedVersion": "1.0.0",
+  "slug": "groq-whisper-stt",
+  "installedVersion": "2.0.0",
   "installedAt": 1771846815913
 }

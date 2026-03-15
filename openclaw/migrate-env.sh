@@ -6,9 +6,7 @@ BASHRC=/home/valian/.bashrc
 # Variables de entorno (API keys)
 cat >> $BASHRC << 'ENVVARS'
 
-# API Keys migradas desde Ubuntu
-export OPENAI_API_KEY=<GROQ_API_KEY>
-export OPENAI_BASE_URL=https://api.groq.com/openai/v1
+# API Keys
 export GROQ_API_KEY=<GROQ_API_KEY>
 ENVVARS
 
