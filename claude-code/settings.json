@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "command": "bash C:/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
             "timeout": 10
           }
         ]
@@ -26,11 +26,10 @@
     ],
     "Notification": [
       {
-        "matcher": "idle_prompt|permission_prompt",
         "hooks": [
           {
             "type": "command",
-            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw.sh",
+            "command": "bash C:/Users/mario/.claude/hooks/notify-openclaw.sh",
             "timeout": 10
           }
         ]
@@ -42,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "command": "bash C:/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
             "timeout": 5
           }
         ]
@@ -52,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "command": "bash C:/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
             "timeout": 5
           }
         ]
@@ -64,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "command": "bash C:/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
             "timeout": 5
           }
         ]

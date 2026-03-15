@@ -64,7 +64,7 @@ Analyze the input: $ARGUMENTS
 ### No args — Show usage
 
 ```
-Usage: /kg-viewer <action>
+Usage: /kg-viewer ACTION
 
 Actions:
   start    Levantar el viewer web en http://localhost:8420

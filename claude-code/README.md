@@ -86,7 +86,7 @@ Claude Code (hook event)
 | Hook | Matcher | Script | Scope |
 |---|---|---|---|
 | **Stop** | — | `progress` | Solo orchestrator |
-| **Notification** | `idle_prompt\|permission_prompt` | `global` | Siempre |
+| **Notification** | — | `global` | Siempre |
 | **PostToolUse** | `Write\|Edit` | `progress` | Solo orchestrator |
 | **PostToolUse** | `Bash` | `progress` | Solo orchestrator |
 | **PreToolUse** | `Bash` | `progress` | Solo orchestrator |
@@ -100,7 +100,7 @@ Reglas del script de progress:
 
 ## Sistema de Agentes
 
-11 agentes especializados coordinados por un orchestrator central. Pipeline completo: issue → diseño → implementacion → testing → delivery → PR.
+11 agentes especializados coordinados por un orchestrator central. Pipeline completo: issue → diseño → implementacion → testing → delivery → PR. 20 slash commands (15 rutean al orchestrator, 5 standalone).
 
 ```
 Usuario ──> /skill ──> Orchestrator ──> Agente(s) ──> session-docs ──> Resultado
@@ -144,13 +144,14 @@ Usuario ──> /skill ──> Orchestrator ──> Agente(s) ──> session-do
 /resume [feature]          Retomar pipeline interrumpido
 ```
 
-**Standalone (4 skills — NO rutean al orchestrator):**
+**Standalone (5 skills — NO rutean al orchestrator):**
 
 ```
 /status [feature]          Estado de pipelines activos
 /memory <action>           Gestionar Knowledge Graph
 /lint                      Health check de agentes y skills
 /tmux <action>             Sesiones tmux paralelas
+/kg-viewer <action>        Viewer web del Knowledge Graph
 ```
 
 ---

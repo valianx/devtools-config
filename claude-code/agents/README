@@ -16,10 +16,11 @@ Sistema de agentes especializados coordinados por un orchestrator central. Cada 
 | **reviewer** | opus | Revisa PRs en GitHub | No |
 | **init** | opus | Bootstrap de CLAUDE.md en cualquier repo | No |
 | **diagrammer** | opus | Genera diagramas Excalidraw | No |
+| **agent-builder** | opus | Crea y mejora agentes y skills | Si |
 
 ## Entry Points (Skills)
 
-Todas las skills rutean al orchestrator (excepto `/lint` y `/tmux`).
+Todas las skills rutean al orchestrator (excepto `/lint`, `/tmux`, `/status`, `/memory` y `/kg-viewer`).
 
 ```
 /issue <#N | texto>        Full pipeline o batch de issues
@@ -41,6 +42,7 @@ Todas las skills rutean al orchestrator (excepto `/lint` y `/tmux`).
 /memory <action>           Gestionar Knowledge Graph (standalone)
 /lint                      Health check de agentes y skills (standalone)
 /tmux <action>             Sesiones tmux paralelas (standalone)
+/kg-viewer <action>        Viewer web del Knowledge Graph (standalone)
 ```
 
 ## Pipeline Principal
@@ -70,8 +72,8 @@ Todas las skills rutean al orchestrator (excepto `/lint` y `/tmux`).
 
 ### Skip Rules
 
-- `hotfix` / `simple` → skip Design (Phase 1)
 - `research` → stop despues de Phase 1
+- Todas las demas fases son mandatorias (no existe clasificacion "simple")
 
 ### Iteration Loop
 
@@ -132,7 +134,10 @@ session-docs/{feature-name}/
   03-testing.md            ← tester
   04-validation.md         ← qa
   04-security.md           ← security (si security-sensitive)
+  04-review.md             ← reviewer
   05-delivery.md           ← delivery
+  05-diagram.md            ← diagrammer
+  00-knowledge-context.md  ← orchestrator (knowledge graph results)
 ```
 
 Siempre en `.gitignore` (`/session-docs`).
@@ -141,8 +146,8 @@ Siempre en `.gitignore` (`/session-docs`).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Knowledge Graph MCP (cross-project)                        │
-│  ~/.claude/knowledge.json                                   │
+│  ChromaDB Knowledge Graph (cross-project)                   │
+│  ~/.claude/chromadb/ (busqueda semantica, embeddings locales│
 │  Orchestrator lee al inicio (Phase 0a)                      │
 │  Orchestrator escribe al final de pipelines productivos     │
 │  Max 3 entities por pipeline, solo conocimiento reutilizable│

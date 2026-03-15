@@ -28,7 +28,7 @@ devtools-config/
 
 ## Claude Code
 
-11 agentes especializados + 19 slash commands + hooks de integración con OpenClaw. Pipeline completo: issue → diseño → implementacion → testing → delivery → PR.
+11 agentes especializados + 20 slash commands + hooks de integración con OpenClaw. Pipeline completo: issue → diseño → implementacion → testing → delivery → PR.
 
 Ver [`claude-code/README.md`](claude-code/README.md) para documentacion completa.
 

@@ -1,6 +1,6 @@
 ---
 name: tmux-wsl
-description: Orchestrate tmux sessions in WSL. Use instead of the default tmux skill when running on Mario-PC (WSL2). All tmux commands MUST be prefixed with `wsl tmux`. Handles Claude Code sessions, parallel workers, and session lifecycle.
+description: Use when user wants to Orchestrate tmux sessions in WSL. Use instead of the default tmux skill when running on Mario-PC (WSL2). All tmux commands MUST be prefixed with `wsl tmux`. Handles Claude Code sessions, parallel workers, and session lifecycle.
 ---
 
 # tmux en WSL - Mario-PC
