@@ -3,7 +3,8 @@ package.json
 bun.lock
 *.backup*
 
-# Claude Code local settings (may contain API keys)
-**/.claude/settings.local.json
+# Claude Code project-level (runtime artifacts, source is claude-code/skills/)
+.claude/
+
 /session-docs__pycache__/
 *.pyc
