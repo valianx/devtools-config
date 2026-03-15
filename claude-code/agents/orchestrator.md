@@ -152,7 +152,7 @@ Every task runs the COMPLETE pipeline: Specify → Design → Implement → Veri
 **Owner:** You (orchestrator)
 
 1. **Check for existing pipeline** — use Glob to check if `session-docs/{feature-name}/00-state.md` already exists with `status: in_progress` or `status: iterating`. If found, warn the user: "A pipeline for '{feature-name}' is already active at Phase {N}. Use `/resume {feature-name}` to continue it, or confirm you want to start fresh." Wait for confirmation before proceeding. This prevents duplicate pipelines for the same feature.
-2. **Query knowledge graph and write to file** — search for related knowledge from past pipelines. Use the ChromaDB MCP tools (if available) to `search_nodes` with 2-3 queries related to the project name, technologies, or components mentioned in the task. ChromaDB uses semantic search, so natural language queries work well — e.g., "Next.js authentication patterns" or "Prisma serverless gotchas". If results are found, write them to `session-docs/{feature-name}/00-knowledge-context.md`:
+2. **MANDATORY — Query knowledge graph and write to file** — this is the FIRST action you take before any analysis. Search for related knowledge from past pipelines using ChromaDB MCP `search_nodes` with 2-3 semantic queries related to the project name, technologies, or components mentioned in the task (e.g., "Next.js authentication patterns", "Prisma serverless gotchas"). You MUST call `search_nodes` — do not skip this step. If ChromaDB MCP tools fail or are unavailable, log "KG: unavailable, skipping" and continue. If results are found, write them to `session-docs/{feature-name}/00-knowledge-context.md`:
    ```markdown
    # Knowledge Context
    <!-- Auto-generated from ChromaDB knowledge graph. Agents: read this for relevant past insights. -->
@@ -164,7 +164,7 @@ Every task runs the COMPLETE pipeline: Specify → Design → Implement → Veri
    ## Relevant relations
    - {from} → {relationType} → {to}
    ```
-   Then **forget the results** — do NOT keep them in your context or Hot Context. Downstream agents will read this file directly when they need it. If ChromaDB MCP is not available or no relevant results found, skip — do not create the file.
+   Then **forget the results** — do NOT keep them in your context or Hot Context. Downstream agents will read this file directly when they need it. If no relevant results found, do not create the file.
 3. **Receive and analyze** the task — either plain text from the user or GitHub issue data from `/issue`
 4. **If GitHub issue data is present:**
    - Use the issue title as feature name (kebab-case)
@@ -560,19 +560,21 @@ When multiple tasks are received (batch from `/issue` or `/plan`), track state i
 ### Research (investigation only)
 When the user asks to investigate, compare technologies, evaluate a migration, or study an approach:
 1. Intake (classify as `research`)
-2. Invoke `architect` in **research mode** — explicitly instruct: "This is a research task, produce `00-research.md`"
-3. Skip Phases 2-5 (no implementation, testing, validation, or delivery)
-4. Present the research report to the user
-5. Ask the user how to proceed (implement the recommendation, discard, or investigate further)
+2. **MANDATORY — Query KG** — call `search_nodes` with 1-2 semantic queries about the research topic. Write `00-knowledge-context.md` if results found (same format as Phase 0a Step 2). If ChromaDB MCP fails, log "KG: unavailable" and continue.
+3. Invoke `architect` in **research mode** — explicitly instruct: "This is a research task, produce `00-research.md`"
+4. Skip Phases 2-5 (no implementation, testing, validation, or delivery)
+5. Present the research report to the user
+6. Ask the user how to proceed (implement the recommendation, discard, or investigate further)
 
 ### Spike (quick prototype)
 When the user wants to quickly test a technical hypothesis without full pipeline ceremony:
 1. Intake (classify as `spike`, complexity always `simple`)
-2. Skip Design — no architecture proposal needed
-3. Write minimal `00-task-intake.md` with just: description, what to test, success criteria
-4. Invoke `implementer` with: "This is a spike — write exploratory code to test: {description}. No tests needed. Focus on proving whether {hypothesis} works. Document what you found in `02-implementation.md`."
-5. Skip Phases 3-5 (no testing, validation, delivery, or GitHub update)
-6. Present results to the user with a clear question:
+2. **MANDATORY — Query KG** — call `search_nodes` with 1-2 semantic queries about the spike topic. Write `00-knowledge-context.md` if results found (same format as Phase 0a Step 2). If ChromaDB MCP fails, log "KG: unavailable" and continue.
+3. Skip Design — no architecture proposal needed
+4. Write minimal `00-task-intake.md` with just: description, what to test, success criteria
+5. Invoke `implementer` with: "This is a spike — write exploratory code to test: {description}. No tests needed. Focus on proving whether {hypothesis} works. Document what you found in `02-implementation.md`."
+6. Skip Phases 3-5 (no testing, validation, delivery, or GitHub update)
+7. Present results to the user with a clear question:
    ```
    Spike complete: {summary of what was found}
 
@@ -581,7 +583,7 @@ When the user wants to quickly test a technical hypothesis without full pipeline
    2. Discard → I'll revert the changes (git checkout)
    3. Investigate further → I'll run another spike or a /research
    ```
-7. Act on user's choice:
+8. Act on user's choice:
    - Formalize: create GitHub issue via `gh issue create` using the **SDD issue template** — include spike findings in the Technical Context section. Then ask user: "Issue created. Run through the full pipeline now?" If yes, process the issue as a normal `/issue` task (full pipeline from Phase 0a).
    - Discard: `git checkout -- .` to revert exploratory code (confirm with user first). Clean up `session-docs/{feature-name}/` if created.
    - Investigate: continue as directed — run another spike with different parameters, or switch to `/research` for deeper analysis.
@@ -592,10 +594,11 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
 
 **Planning phase (both modes):**
 1. **Intake** — classify as `plan` or `plan-and-execute`. Do NOT move GitHub issues to "In Progress" yet.
-2. **Specify** — full SPECIFY as normal (codebase investigation, AC, scope). Update GitHub issue if `needs-specify: true`.
-3. **Design (planning mode)** — invoke `architect` in planning mode. Architect produces task breakdown in `01-planning.md` (not an architecture proposal). Task sizing is the architect's responsibility.
-4. **Validate sizing** — read `01-planning.md`. If any task has >20 AC or looks like a full feature, re-invoke architect to split. Max 1 retry.
-5. **Create tasks** — check `gh auth status`:
+2. **MANDATORY — Query KG** — call `search_nodes` with 2-3 semantic queries about the project/technologies/components. Write `00-knowledge-context.md` if results found (same format as Phase 0a Step 2). If ChromaDB MCP fails, log "KG: unavailable" and continue.
+3. **Specify** — full SPECIFY as normal (codebase investigation, AC, scope). Update GitHub issue if `needs-specify: true`.
+4. **Design (planning mode)** — invoke `architect` in planning mode. Architect produces task breakdown in `01-planning.md` (not an architecture proposal). Task sizing is the architect's responsibility.
+5. **Validate sizing** — read `01-planning.md`. If any task has >20 AC or looks like a full feature, re-invoke architect to split. Max 1 retry.
+6. **Create tasks** — check `gh auth status`:
    - **gh available:** create one GitHub issue per task via `gh issue create` using the **SDD issue template**:
      - **Labels:** detect available labels from the repo (`gh label list --json name -q '.[].name'`). Assign the appropriate type label (e.g., `bug`, `feature`, `enhancement`) plus any group/component labels. Never invent labels — only use existing ones.
      - **Assignee:** always `--assignee @me`
@@ -624,7 +627,7 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
    ```
 
    **Rules:** min 2 AC, max 20 (if >20, task is too large — split it). AC always Given/When/Then with checkbox. Populate Technical Context from `01-planning.md` (files affected, architecture guidance). Dependencies reference other tasks in the breakdown by title.
-6. **Report** created tasks to user.
+7. **Report** created tasks to user.
 
 **Mode: `plan`** → STOP after reporting.
 
@@ -683,6 +686,8 @@ At the end of a successful orchestration, report to the user:
 ## Direct Modes
 
 When invoked with a `Direct Mode Task` (from a skill), execute only the specified flow — not the full pipeline. Set up session-docs as needed, invoke the agent, report results, and STOP. If a required prerequisite is missing, inform the user.
+
+**MANDATORY — KG consultation in direct modes:** Before invoking any agent in a direct mode, you MUST call ChromaDB MCP `search_nodes` with 1-2 semantic queries relevant to the task. If results are found, write `00-knowledge-context.md` (same format as Phase 0a Step 2) so the downstream agent has past insights. If ChromaDB MCP fails or is unavailable, log "KG: unavailable" and continue. The only exceptions are `init` and `resume` (which have no session-docs context to enrich).
 
 | Mode | Agent | Prerequisites | Flow |
 |------|-------|--------------|------|

@@ -1,6 +1,6 @@
 # devtools-config
 
-Configuraciones y herramientas para mi ambiente de desarrollo local.
+Configuraciones y herramientas para mi ambiente de desarrollo local. El objetivo es documentar el flujo de trabajo completo y poder restaurarlo en cualquier sistema.
 
 ## Setup
 
@@ -10,7 +10,7 @@ cd devtools-config
 ./scripts/setup.sh
 ```
 
-Instala todo: Claude Code, agentes, skills, MCP servers (Memory + context7), ChromaDB, y el renderer de Excalidraw.
+Instala todo: Claude Code (agentes, skills, MCP servers, hooks), ChromaDB, y el renderer de Excalidraw.
 
 Prerequisites: `node`, `npm`, `python`, `git`. Opcional: `uv` (para excalidraw renderer).
 
@@ -18,17 +18,29 @@ Prerequisites: `node`, `npm`, `python`, `git`. Opcional: `uv` (para excalidraw r
 
 ```
 devtools-config/
-├── AI development/      # Sistema de agentes AI para Claude Code
+├── claude-code/         # Claude Code: agentes, skills, hooks, settings
+├── openclaw/            # OpenClaw: agente Val (Telegram, WSL2 service)
+├── scripts/             # Scripts de setup y utilidades
+├── vps/                 # Setup de VPS (Ubuntu, Claude Code remoto)
 ├── presentation/        # Presentaciones (HTML)
-├── windows-terminal/    # Configuracion de Windows Terminal
-└── scripts/             # Scripts de setup y utilidades
+└── windows-terminal/    # Configuracion de Windows Terminal
 ```
 
-## AI Development
+## Claude Code
 
-Sistema de 11 agentes especializados coordinados por un orchestrator central. 19 slash commands como entry points. Pipeline completo: issue → diseño → implementacion → testing → delivery → PR.
+11 agentes especializados + 19 slash commands + hooks de integración con OpenClaw. Pipeline completo: issue → diseño → implementacion → testing → delivery → PR.
 
-Ver [`AI development/README.md`](AI%20development/README.md) para documentacion completa.
+Ver [`claude-code/README.md`](claude-code/README.md) para documentacion completa.
+
+## OpenClaw
+
+Agente Val — corre como servicio systemd en WSL2, se comunica via Telegram. Auto-start al login de Windows via Task Scheduler + VBS (sin consola visible).
+
+Ver [`openclaw/README.md`](openclaw/README.md) para configuracion completa.
+
+## Secrets
+
+Lista unificada de todas las API keys y tokens necesarios para restaurar el entorno. Ver [`SECRETS.md`](SECRETS.md).
 
 ## Presentaciones
 

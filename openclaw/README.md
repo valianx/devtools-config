@@ -183,13 +183,7 @@ cp cron/jobs.json ~/.openclaw/cron/jobs.json
 
 ### 3. Restaurar las API keys
 
-Editar `~/.openclaw/openclaw.json` y reemplazar los valores `<REDACTED>` con las keys reales:
-
-- `auth.profiles.anthropic:openclaw.apiKey` → `ANTHROPIC_API_KEY`
-- `auth.profiles.groq:default.apiKey` → `GROQ_API_KEY`
-- `messages.tts.elevenlabs.apiKey` → `ELEVENLABS_API_KEY`
-- `channels.telegram.botToken` → `TELEGRAM_BOT_TOKEN`
-- `gateway.auth.token` → `OPENCLAW_GATEWAY_TOKEN`
+Ver [`SECRETS.md`](../SECRETS.md) para la lista completa de variables y dónde van.
 
 ### 4. Restaurar el workspace del agente
 
@@ -199,36 +193,124 @@ git clone <repo-del-workspace> .
 # o copiar los archivos manualmente
 ```
 
-### 5. Iniciar OpenClaw
+### 5. Restaurar el servicio systemd (WSL)
 
 ```bash
-openclaw gateway start
+# Copiar el unit file
+cp openclaw-gateway.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable openclaw-gateway.service
+systemctl --user start openclaw-gateway.service
+```
+
+### 6. Auto-start de OpenClaw (WSL2)
+
+OpenClaw corre como servicio systemd en WSL2. Para que arranque automáticamente al iniciar Windows se necesitan dos cosas:
+
+#### `.wslconfig` — Mirrored networking
+
+WSL2 usa NAT por defecto, lo que impide que Windows acceda a `localhost:18789` dentro de WSL. Con mirrored networking, WSL comparte el stack de red de Windows.
+
+```bash
+# Restaurar desde el repo
+cp wslconfig ~/.wslconfig
+# O crear manualmente:
+```
+```ini
+# C:\Users\mario\.wslconfig
+[wsl2]
+networkingMode=mirrored
+```
+
+#### Task Scheduler — Mantener WSL vivo
+
+El servicio systemd de OpenClaw (`openclaw-gateway.service`) está `enabled` y arranca solo con systemd. Pero WSL2 termina la VM cuando no hay procesos `wsl.exe` activos en Windows. La tarea del Task Scheduler mantiene WSL vivo con `sleep infinity`.
+
+Un script VBS (`start-hidden.vbs`) lanza `wsl.exe` sin ventana de consola visible, evitando que el usuario la cierre por accidente y mate el proceso.
+
+| Setting | Valor |
+|---|---|
+| **Task Name** | `OpenClaw Gateway` |
+| **Trigger** | At logon (usuario mario) |
+| **Command** | `wscript.exe "C:\Users\mario\.openclaw\start-hidden.vbs"` |
+| **Stop on battery** | No |
+| **Start on battery** | Sí |
+| **Execution time limit** | Sin límite (`PT0S`) |
+
+**`start-hidden.vbs`** (copiado en `~/.openclaw/` y respaldado en este repo):
+```vbs
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "wsl.exe -e bash -c ""exec sleep infinity""", 0, False
+```
+El `0` = ventana oculta. `False` = no esperar a que termine.
+
+**Flujo al iniciar Windows:**
+1. Task Scheduler lanza `wscript.exe start-hidden.vbs`
+2. VBS ejecuta `wsl.exe` sin ventana visible
+3. WSL2 arranca → systemd inicia → `openclaw-gateway.service` levanta automáticamente
+4. `sleep infinity` mantiene la VM viva → WSL no se apaga
+5. Mirrored networking expone `localhost:18789` a Windows
+
+**Para crear/actualizar la tarea manualmente (PowerShell como Admin):**
+```powershell
+$action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument '"C:\Users\mario\.openclaw\start-hidden.vbs"'
+Set-ScheduledTask -TaskName 'OpenClaw Gateway' -Action $action
+```
+
+**Para arrancar manualmente (sin reiniciar):**
+```bash
+# Desde Git Bash / cmd
+wscript.exe "C:\Users\mario\.openclaw\start-hidden.vbs"
+# El servicio arranca solo via systemd
 ```
 
 ---
 
 ## Hooks — Notificaciones de Claude Code a OpenClaw
 
-Claude Code puede notificar a OpenClaw via HTTP hooks cuando:
-- **Terminó el trabajo** (`Stop`) — incluye `last_assistant_message` con el resumen
-- **Necesita input del usuario** (`Notification`) — permisos o preguntas
-- **Falló una herramienta** (`PostToolUseFailure`) — incluye error y tool name
+Claude Code notifica a OpenClaw via hooks configurados en `~/.claude/settings.json`. Hay dos scripts según el scope:
 
-La config está en `hooks-config.json`. Para activarla, copiar al settings de Claude Code:
+### Scripts de hooks
 
-```bash
-# Global (todos los proyectos)
-cp hooks-config.json ~/.claude/settings.json
-# O mergear con settings existentes si ya hay config
-```
+| Script | Ubicación | Scope |
+|---|---|---|
+| `notify-openclaw.sh` | `~/.claude/hooks/` | Global — dispara siempre |
+| `notify-openclaw-progress.sh` | `~/.claude/hooks/` | Pipeline — solo si hay un orchestrator activo |
 
-El endpoint `http://localhost:18789/claude-events` debe existir en OpenClaw. Los hooks envían POST con JSON incluyendo `session_id`, `hook_event_name`, y los datos relevantes del evento. El header `X-Event-Type` facilita el routing en el gateway.
+El script de **progress** verifica si existe `session-docs/*/00-state.md` con status != complete. Si no hay pipeline activo, sale silenciosamente sin enviar nada a Telegram.
+
+### Eventos configurados
+
+| Hook | Matcher | Script | Cuándo notifica |
+|---|---|---|---|
+| **Stop** | — | `progress` | Pipeline terminó → `✅ Claude terminó: {resumen}` |
+| **Notification** | `idle_prompt\|permission_prompt` | `notify-openclaw.sh` | Siempre → `⏳ Claude necesita tu input` |
+| **PostToolUse** | `Write\|Edit` | `progress` | Pipeline modificó un archivo → `📝 Modificó: {archivo}` |
+| **PostToolUse** | `Bash` | `progress` | Comando falló o es relevante (test/deploy/push/build) → `⚙️ Ejecutó: {cmd}` |
+| **PreToolUse** | `Bash` | `progress` | Comando peligroso (rm -rf, push --force, reset --hard) → `⚠️ Comando peligroso: {cmd}` |
+| **PostToolUseFailure** | `*` | `notify-openclaw.sh` | Siempre → `❌ Error en {tool}: {error}` |
+
+### Reglas de filtrado (progress)
+
+- **Comandos exitosos silenciosos**: solo notifica si el comando falló o matchea keywords (test, deploy, push, install, build)
+- **Pre-command es log-only**: solo notifica si es destructivo
+- **Sin pipeline = sin ruido**: uso casual de Claude Code no genera mensajes a Telegram
+
+### Endpoint
+
+Ambos scripts envían POST a `http://localhost:18789/hooks/wake` con `Authorization: Bearer $OPENCLAW_GATEWAY_TOKEN`. OpenClaw procesa el mensaje y lo reenvía a Telegram según las reglas en `HEARTBEAT.md`.
+
+### Restaurar hooks
+
+Los hooks, scripts y config de Claude Code están en [`claude-code/`](../claude-code/README.md).
 
 ---
 
 ## Notas de entorno
 
 - **OS**: WSL2 en Windows 11 (Mario-PC)
+- **Networking**: mirrored (`.wslconfig`) — localhost compartido entre Windows y WSL
+- **Auto-start**: Task Scheduler → `start-hidden.vbs` → `wsl.exe` (sin consola) → systemd → openclaw-gateway.service
 - **Path de config en Windows**: `C:\Users\mario\.openclaw\`
 - **Path en WSL**: `~/.openclaw/` (symlink al mismo lugar)
 - **Node.js**: v22.22.0 (via fnm)

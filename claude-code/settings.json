@@ -1,0 +1,87 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx jest:*)",
+      "Bash(netstat -ano)",
+      "Bash(VBoxManage unregistervm \"3e41cd34-49ac-4f3e-a755-998732717e48\" --delete)",
+      "Read(//c/Users/mario/VirtualBox VMs//**)",
+      "Bash(wmic process where \"ProcessId=57412\" get Name,CommandLine)",
+      "Bash(powershell -c \"Get-Process -Id 57412 | Select-Object Name, Path\")",
+      "Read(//c/Users/mario/.VirtualBox/**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:pixijs.com)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "idle_prompt|permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /c/Users/mario/.claude/hooks/notify-openclaw-progress.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {},
+  "extraKnownMarketplaces": {
+    "thedotmack": {
+      "source": {
+        "source": "github",
+        "repo": "thedotmack/claude-mem"
+      }
+    }
+  },
+  "effortLevel": "high",
+  "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true,
+  "voiceEnabled": true
+}

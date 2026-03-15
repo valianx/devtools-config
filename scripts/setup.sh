@@ -9,7 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-AI_DEV="$REPO_DIR/AI development"
+AI_DEV="$REPO_DIR/claude-code"
 
 # Colores
 RED='\033[0;31m'
@@ -227,6 +227,7 @@ install_chromadb_mcp() {
     cp "$mcp_src/server.py" "$mcp_dest/"
     cp "$mcp_src/pyproject.toml" "$mcp_dest/"
     cp "$mcp_src/migrate_knowledge.py" "$mcp_dest/"
+    cp "$mcp_src/manage-server.sh" "$mcp_dest/" && chmod +x "$mcp_dest/manage-server.sh"
     mkdir -p "$mcp_dest/viewer"
     cp "$mcp_src/viewer/app.py" "$mcp_dest/viewer/"
 
@@ -234,7 +235,7 @@ install_chromadb_mcp() {
     if [ -n "$UV" ]; then
       (cd "$mcp_dest" && "$UV" sync 2>&1 | tail -1) && ok "Dependencias instaladas via uv"
     elif [ -n "$PYTHON" ]; then
-      (cd "$mcp_dest" && $PYTHON -m pip install chromadb "mcp>=1.0.0" 2>&1 | tail -1) && ok "Dependencias instaladas via pip"
+      (cd "$mcp_dest" && $PYTHON -m pip install chromadb "mcp>=1.0.0" uvicorn 2>&1 | tail -1) && ok "Dependencias instaladas via pip"
     else
       warn "Python no disponible — ChromaDB MCP no se instalará"
       return
@@ -256,26 +257,31 @@ configure_mcp() {
     return
   fi
 
-  # ChromaDB MCP — registrado como "memory" para reemplazar el built-in
-  # Remove old chromadb-knowledge name if present (legacy)
-  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
-    claude mcp remove chromadb-knowledge --scope user 2>&1 || true
-  fi
+  # ChromaDB MCP — SSE mode (single server on Windows, accessible from WSL)
+  # Remove old registrations (legacy stdio)
+  claude mcp remove chromadb-knowledge --scope user 2>&1 || true
+  claude mcp remove chromadb-knowledge --scope project 2>&1 || true
 
   local mcp_server="$claude_dir/chromadb-mcp/server.py"
+  local manage_script="$claude_dir/chromadb-mcp/manage-server.sh"
+  local sse_port="${CHROMADB_PORT:-8421}"
+  local sse_url="http://localhost:$sse_port/sse"
+
   if [ -f "$mcp_server" ]; then
-    # Always re-register to ensure correct config
-    claude mcp remove memory --scope user 2>&1 || true
-    local run_cmd
-    if [ -n "$UV" ]; then
-      run_cmd="$UV run --directory $claude_dir/chromadb-mcp python server.py"
-    else
-      run_cmd="$PYTHON $mcp_server"
+    # Start SSE server (binds 0.0.0.0 so WSL can reach it)
+    if [ -f "$manage_script" ]; then
+      export CHROMADB_PATH="$claude_dir/chromadb"
+      export CHROMADB_MCP_DIR="$claude_dir/chromadb-mcp"
+      export CHROMADB_HOST="0.0.0.0"
+      bash "$manage_script" restart 2>&1 | while read -r line; do echo "    $line"; done
+      ok "ChromaDB MCP SSE server en $sse_url"
     fi
-    claude mcp add memory --scope user -e CHROMADB_PATH="$claude_dir/chromadb" \
-      -- $run_cmd 2>&1 \
-      && ok "ChromaDB MCP registrado como 'memory'" \
-      || warn "No se pudo configurar ChromaDB MCP"
+
+    # Register as SSE
+    claude mcp remove memory --scope user 2>&1 || true
+    claude mcp add --transport sse --scope user memory "$sse_url" 2>&1 \
+      && ok "ChromaDB MCP registrado como 'memory' (SSE: $sse_url)" \
+      || warn "No se pudo registrar ChromaDB MCP"
   else
     warn "ChromaDB MCP server no encontrado — saltando configuración"
   fi
@@ -295,15 +301,15 @@ configure_mcp() {
   local chromadb_dir="$claude_dir/chromadb"
   if [ -f "$knowledge_file" ]; then
     step "[$env_label] Migrando knowledge.json a ChromaDB (merge)..."
-    local migrate_script="$claude_dir/chromadb-mcp/migrate_knowledge.py"
-    if [ -f "$migrate_script" ]; then
+    local migrate_script_py="$claude_dir/chromadb-mcp/migrate_knowledge.py"
+    if [ -f "$migrate_script_py" ]; then
       if [ -n "$UV" ]; then
         (cd "$claude_dir/chromadb-mcp" && "$UV" run python migrate_knowledge.py \
           --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1) \
           && ok "Migración completada (knowledge.json → .bak)" \
           || warn "Migración falló — knowledge.json conservado"
       elif [ -n "$PYTHON" ]; then
-        $PYTHON "$migrate_script" --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1 \
+        $PYTHON "$migrate_script_py" --source "$knowledge_file" --db-path "$chromadb_dir" 2>&1 \
           && ok "Migración completada (knowledge.json → .bak)" \
           || warn "Migración falló — knowledge.json conservado"
       fi
@@ -358,7 +364,7 @@ if $IS_WINDOWS && $HAS_WSL; then
 set -euo pipefail
 
 REPO_DIR="'"$WSL_REPO_DIR"'"
-AI_DEV="$REPO_DIR/AI development"
+AI_DEV="$REPO_DIR/claude-code"
 CLAUDE_DIR="$HOME/.claude"
 # ChromaDB compartida: apunta al directorio de Windows para tener una sola DB
 WIN_CHROMADB_PATH="'"$WSL_WIN_CLAUDE"'/chromadb"
@@ -450,41 +456,22 @@ else
   warn "Skipping renderer — uv no disponible en WSL"
 fi
 
-# ChromaDB MCP server
-step "[WSL] ChromaDB MCP server..."
-MCP_SRC="$REPO_DIR/scripts/chromadb-mcp"
-MCP_DEST="$CLAUDE_DIR/chromadb-mcp"
-if [ -d "$MCP_SRC" ]; then
-  mkdir -p "$MCP_DEST"
-  cp "$MCP_SRC/server.py" "$MCP_DEST/"
-  cp "$MCP_SRC/pyproject.toml" "$MCP_DEST/"
-  cp "$MCP_SRC/migrate_knowledge.py" "$MCP_DEST/"
-  if [ -n "$UV" ]; then
-    (cd "$MCP_DEST" && "$UV" sync 2>&1 | tail -1) && ok "ChromaDB MCP deps instaladas"
-  elif [ -n "$PYTHON" ]; then
-    $PYTHON -m pip install chromadb "mcp>=1.0.0" 2>&1 | tail -1 && ok "ChromaDB MCP deps instaladas"
-  fi
-  ok "ChromaDB MCP desplegado"
-fi
+# ChromaDB MCP — WSL connects to Windows-side SSE server (no local server needed)
+step "[WSL] Configurando ChromaDB MCP (SSE client)..."
+SSE_PORT="${CHROMADB_PORT:-8421}"
+# WSL2 reaches Windows host via default gateway IP
+WIN_HOST_IP=$(ip route show default 2>/dev/null | head -1 | cut -d" " -f3)
+SSE_URL="http://${WIN_HOST_IP:-172.27.224.1}:$SSE_PORT/sse"
 
-# MCP servers
-step "[WSL] Configurando MCP servers..."
 if command -v claude >/dev/null 2>&1; then
-  # Remove old chromadb-knowledge name if present (legacy)
-  if claude mcp list 2>&1 | grep -q "chromadb-knowledge"; then
-    claude mcp remove chromadb-knowledge --scope user 2>&1 || true
-  fi
+  # Remove old registrations (legacy stdio)
+  claude mcp remove chromadb-knowledge --scope user 2>&1 || true
+  claude mcp remove memory --scope user 2>&1 || true
 
-  # ChromaDB MCP — registrado como "memory", apunta a la DB de Windows (compartida)
-  if [ -f "$MCP_DEST/server.py" ]; then
-    claude mcp remove memory --scope user 2>&1 || true
-    RUN_CMD="$PYTHON $MCP_DEST/server.py"
-    [ -n "$UV" ] && RUN_CMD="$UV run --directory $MCP_DEST python server.py"
-    claude mcp add memory --scope user -e CHROMADB_PATH="$WIN_CHROMADB_PATH" \
-      -- $RUN_CMD 2>&1 \
-      && ok "ChromaDB MCP registrado como memory (DB: $WIN_CHROMADB_PATH)" \
-      || warn "No se pudo configurar ChromaDB MCP"
-  fi
+  # Register as SSE — connects to the Windows-side server via gateway IP
+  claude mcp add --transport sse --scope user memory "$SSE_URL" 2>&1 \
+    && ok "ChromaDB MCP registrado como 'memory' (SSE: $SSE_URL)" \
+    || warn "No se pudo registrar ChromaDB MCP"
 
   # context7 MCP
   claude mcp list 2>&1 | grep -q "context7" \
@@ -501,6 +488,70 @@ echo "  WSL setup completado"
 '
 
   wsl bash -c "$WSL_SCRIPT" && WSL_DONE=true || warn "WSL setup falló — verificar manualmente"
+
+  # ===========================================================================
+  # WSL auto-start: Task Scheduler + .wslconfig (mirrored networking)
+  # ===========================================================================
+  step "[Windows] Configurando auto-start de WSL..."
+
+  # .wslconfig — mirrored networking para que localhost:18789 sea accesible desde Windows
+  WSLCONFIG="$USERPROFILE/.wslconfig"
+  if [ -z "$USERPROFILE" ]; then
+    WSLCONFIG="$HOME/.wslconfig"
+  fi
+  if [ ! -f "$WSLCONFIG" ] || ! grep -q "networkingMode=mirrored" "$WSLCONFIG" 2>/dev/null; then
+    cat > "$WSLCONFIG" <<'WSLCFG'
+[wsl2]
+networkingMode=mirrored
+WSLCFG
+    ok ".wslconfig con networkingMode=mirrored"
+  else
+    ok ".wslconfig ya configurado"
+  fi
+
+  # Copiar start-hidden.vbs a ~/.openclaw/
+  step "[Windows] Desplegando start-hidden.vbs..."
+  VBS_SRC="$REPO_DIR/openclaw/start-hidden.vbs"
+  VBS_DEST="$HOME/.openclaw/start-hidden.vbs"
+  if [ -f "$VBS_SRC" ]; then
+    mkdir -p "$HOME/.openclaw"
+    cp "$VBS_SRC" "$VBS_DEST"
+    ok "start-hidden.vbs → $VBS_DEST"
+  else
+    warn "start-hidden.vbs no encontrado en $VBS_SRC"
+  fi
+
+  # Task Scheduler — lanza WSL via VBS (sin consola visible)
+  TASK_NAME="OpenClaw Gateway"
+  TASK_EXISTS=false
+  schtasks //query //tn "$TASK_NAME" //fo LIST >/dev/null 2>&1 && TASK_EXISTS=true
+
+  # Ruta de Windows al VBS
+  VBS_WIN_PATH=$(echo "$VBS_DEST" | sed 's|^/\([a-zA-Z]\)/|\1:\\|' | sed 's|/|\\|g')
+
+  if $TASK_EXISTS; then
+    powershell.exe -NoProfile -Command "
+      \$action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument '\"$VBS_WIN_PATH\"'
+      Set-ScheduledTask -TaskName '$TASK_NAME' -Action \$action | Out-Null
+    " 2>&1 && ok "Task '$TASK_NAME' actualizada (VBS hidden)" || warn "No se pudo actualizar la tarea (requiere admin?)"
+  else
+    powershell.exe -NoProfile -Command "
+      \$action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument '\"$VBS_WIN_PATH\"'
+      \$trigger = New-ScheduledTaskTrigger -AtLogOn -User '$USERNAME'
+      \$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+      Register-ScheduledTask -TaskName '$TASK_NAME' -Action \$action -Trigger \$trigger -Settings \$settings -Description 'Mantiene WSL vivo para OpenClaw gateway (systemd)' | Out-Null
+    " 2>&1 && ok "Task '$TASK_NAME' creada (VBS hidden)" || warn "No se pudo crear la tarea (requiere admin?)"
+  fi
+
+  # Desplegar hooks de Claude Code
+  step "[Windows] Desplegando hooks de Claude Code..."
+  HOOKS_SRC="$REPO_DIR/claude-code/hooks"
+  HOOKS_DEST="$HOME/.claude/hooks"
+  if [ -d "$HOOKS_SRC" ]; then
+    mkdir -p "$HOOKS_DEST"
+    cp "$HOOKS_SRC"/*.sh "$HOOKS_DEST/"
+    ok "Hooks desplegados → $HOOKS_DEST"
+  fi
 fi
 
 # =============================================================================
