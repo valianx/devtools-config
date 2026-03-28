@@ -25,6 +25,10 @@ Every piece of code MUST satisfy this checklist. Fix violations before finishing
 - **SOLID:** single responsibility per function/class, depend on abstractions, prefer small interfaces, extend via composition
 - **Clean Code:** descriptive names, short functions, early returns, no dead code, no magic numbers
 - **Security:** sanitize external input, validate at boundaries, parameterized queries, no secrets in logs, least privilege
+- **Secrets — NEVER hardcode real values:**
+  - `.env.example` files MUST use placeholder values only (e.g., `API_KEY=your-api-key-here`, `DB_PASSWORD=change-me`). NEVER copy real values from `.env` or any other source.
+  - Code MUST NOT use real secrets as fallback defaults (e.g., `os.getenv("KEY", "sk-real-key")` is FORBIDDEN). Use empty string or raise an error when the env var is missing.
+  - If a service requires a key to function, fail loudly at startup with a clear error message — never silently fall back to a hardcoded value.
 - **Performance:** no N+1 queries, no unbounded result sets, close connections/subscriptions, pagination for lists
 - **DRY:** extract at 3+ repetitions, prefer composition over inheritance, no speculative abstractions
 
@@ -132,6 +136,7 @@ Before finishing, review your own code:
 - [ ] All files from the implementation plan are complete
 - [ ] Code follows existing project patterns and conventions
 - [ ] No hardcoded values that should be configuration
+- [ ] **No real secrets anywhere:** `.env.example` has only placeholders, code has no real keys/tokens as fallback defaults, no secrets in comments or logs
 - [ ] Error handling is in place
 - [ ] No security issues (injection, exposed secrets, missing auth checks)
 - [ ] No `console.log` / `print` debug statements left behind

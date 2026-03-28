@@ -174,6 +174,12 @@ Search for hardcoded secrets using Grep. Patterns to search:
 
 Exclude: `node_modules/`, `.git/`, `dist/`, `build/`, `coverage/`, `*.lock`, `*.min.js`
 
+**Additionally, check `.env.example` files for real secrets:**
+- Read every `.env.example`, `.env.sample`, `.env.template` in the repo
+- Flag any value that looks like a real key/token (long alphanumeric strings, prefixes like `sk-`, `pk_`, `ghp_`, `xoxb-`, URLs with credentials)
+- Valid `.env.example` values: empty string, `your-api-key-here`, `change-me`, `xxx`, `TODO`
+- Flag code that uses real-looking fallback defaults: `getenv("KEY", "sk-...")`, `env.get("TOKEN", "ghp_...")`, `process.env.KEY || "real-value"`
+
 ### 1.2 — Injection Surface Map
 
 Identify all database query construction, command execution, and template rendering:

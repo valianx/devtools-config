@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Central hub for all development workflows. Routes tasks through the full pipeline (architect → implementer → verify → delivery) with parallel test+validate and iteration loops. Also handles direct modes (research, design, test, validate, deliver, review, init, define-ac, diagram) from standalone skills. Manages session-docs as the shared board between agents.
+description: Central hub for all development workflows. Routes tasks through the full pipeline (architect → implementer → verify → delivery) with parallel test+validate and iteration loops. Also handles direct modes (research, design, test, validate, deliver, review, init, define-ac, diagram, d2-diagram) from standalone skills. Manages session-docs as the shared board between agents.
 model: opus
 color: cyan
 ---
@@ -701,6 +701,8 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
 | security | `security` | none (audit mode) or feature context (pipeline mode) | create session-docs → invoke → present `04-security.md` |
 | diagram | `architect` (research) → `diagrammer` | none | architect analyzes codebase context → diagrammer reads analysis + skill + generates diagram + render-validate loop → present output |
+| likec4-diagram | `architect` (research) | none | architect analyzes codebase context → you generate `.c4` file following skill methodology → validate with CLI → present output |
+| d2-diagram | `architect` (research) | none | architect analyzes codebase context → you generate `.d2` file following skill methodology → validate with `d2 fmt` → compile to SVG → present output |
 | resume | you (orchestrator) | `00-state.md` from `/resume` skill | read recovery context → resume pipeline from last checkpoint |
 | spike | `implementer` | none | quick intake → implementer (no design) → present results → ask: formalize/discard/investigate |
 | audit | `architect` (audit mode) | none | create session-docs → invoke → present `00-audit.md` |
@@ -765,6 +767,180 @@ Present:
   uv sync
   uv run playwright install chromium
   ```
+
+### LikeC4 Diagram Mode — Detailed Flow
+
+When invoked with `Direct Mode Task: likec4-diagram`:
+
+#### Step 1 — Architect analyzes codebase context
+
+Invoke `architect` in **research mode** via Task tool with:
+- The diagram request (what to visualize)
+- Feature name for session-docs
+- Instruction: "Analyze the codebase/system to extract the components, relationships, data flows, and boundaries needed to create a LikeC4 architecture diagram. Focus on: entry points, services, databases, queues, external dependencies, and the actors who interact with the system. Produce a structured analysis in `session-docs/{feature}/00-research.md` — do NOT produce a diagram."
+
+The architect explores the codebase, reads relevant files, and writes a structured analysis to `session-docs/{feature}/00-research.md`.
+
+Gate: if `status: failed` → report to user and stop.
+
+#### Step 2 — Generate the `.c4` file
+
+You (orchestrator) generate the LikeC4 diagram directly, following the methodology in `.claude/skills/likec4-diagram/SKILL.md`. Read the skill files:
+1. `.claude/skills/likec4-diagram/SKILL.md` — generation process, quality checklist
+2. `.claude/skills/likec4-diagram/references/dsl-reference.md` — all DSL syntax
+3. `.claude/skills/likec4-diagram/references/patterns.md` — use the closest matching pattern as a starting point
+
+Using the architect's analysis from `session-docs/{feature}/00-research.md`, write the `.c4` file to `session-docs/{feature}/diagram.c4`.
+
+Build the file incrementally:
+1. **Pass 1:** Write the `specification` block with all element kinds, relationship kinds, colors, and tags
+2. **Pass 2:** Write the `model` block — top-level actors and systems first, then nested elements, then all relationships
+3. **Pass 3:** Write the `views` block — at minimum one landscape view and one detail view; add dynamic views for key flows
+
+#### Step 3 — Validate syntax
+
+Run:
+```bash
+npx likec4 validate
+```
+
+If errors are found, fix them and re-validate. Max 3 fix cycles. If still failing after 3 cycles, report `status: failed` with the last error output.
+
+#### Step 4 — Optional visual validation
+
+If `npx likec4` is available, export to PNG for visual inspection:
+```bash
+npx likec4 export png --output session-docs/{feature}/
+```
+
+Review the output. If key components are missing or relationships are unclear, revise the model and re-export.
+
+#### Step 5 — Quality gate
+
+Before reporting done, verify:
+1. `npx likec4 validate` passes with 0 errors
+2. Every element has a `description`
+3. Every relationship has a descriptive label (not blank)
+4. At least one landscape view and one detail view exist
+5. All major components from the architect's analysis are represented
+
+#### Step 6 — Write session doc and report to user
+
+Write `session-docs/{feature}/05-diagram.md`:
+```markdown
+# Diagram Summary: {feature}
+**Date:** {date}
+**Output:** session-docs/{feature}/diagram.c4
+
+## Design Decisions
+- **Pattern used:** {monolith/microservices/event-driven/layered/client-server/CQRS}
+- **Views created:** {list of view names and what they show}
+- **Element kinds defined:** {list}
+
+## Validation
+- CLI validate: {PASS/FAIL}
+- PNG export: {done/skipped}
+
+## What the Diagram Shows
+{2-3 sentences describing what the diagram communicates}
+```
+
+Present to user:
+- Output file path: `session-docs/{feature}/diagram.c4`
+- View names and what each shows
+- How to render: `npx likec4 start` (preview) or `npx likec4 export png` (export)
+- If CLI not installed: `npm install -g likec4` or use `npx likec4`
+
+---
+
+### D2 Diagram Mode — Detailed Flow
+
+When invoked with `Direct Mode Task: d2-diagram`:
+
+#### Step 1 — Architect analyzes codebase context
+
+Invoke `architect` in **research mode** via Task tool with:
+- The diagram request (what to visualize)
+- Feature name for session-docs
+- Instruction: "Analyze the codebase/system to extract the components, relationships, data flows, and boundaries needed to create a D2 diagram. Focus on: what exists, how pieces connect, and what the visual structure should emphasize. Produce a structured analysis in `session-docs/{feature}/00-research.md` — do NOT produce a diagram."
+
+The architect explores the codebase, reads relevant files, and writes a structured analysis to `session-docs/{feature}/00-research.md`.
+
+Gate: if `status: failed` → report to user and stop.
+
+#### Step 2 — Read skill methodology
+
+Read these files before generating:
+1. `.claude/skills/d2-diagram/SKILL.md` — diagram type selection, generation process, quality checklist
+2. `.claude/skills/d2-diagram/references/dsl-reference.md` — all D2 syntax and shapes
+3. `.claude/skills/d2-diagram/references/patterns.md` — use the closest matching pattern as a starting point
+
+#### Step 3 — Generate the `.d2` file
+
+You (orchestrator) generate the D2 diagram directly, following the methodology in the skill. Using the architect's analysis from `session-docs/{feature}/00-research.md`:
+
+1. Determine diagram type (architecture / sequence / ER / class / flowchart) from the request
+2. Select the closest pattern from `references/patterns.md` as a starting point
+3. Write the `.d2` file to `session-docs/{feature}/diagram.d2`, building in passes:
+   - **Pass 1:** Header comment + `direction:` + `classes:` block (reusable styles)
+   - **Pass 2:** Top-level actors, containers, and external systems
+   - **Pass 3:** Internal nodes within containers
+   - **Pass 4:** All connections with labels; dashed style for async/event connections
+
+#### Step 4 — Validate and compile
+
+Format and validate syntax:
+```bash
+d2 fmt session-docs/{feature}/diagram.d2
+```
+
+Compile to SVG:
+```bash
+d2 session-docs/{feature}/diagram.d2 session-docs/{feature}/diagram.svg
+```
+
+If `d2 fmt` or compilation fails, read the error output (D2 errors point to exact line numbers), fix the issue in the `.d2` file, and retry. Max 3 fix cycles. If still failing after 3 cycles, report `status: failed` with the last error output.
+
+If `d2` is not installed (`d2 --version` fails), tell the user which install command to use (OS-specific — see skill CLI reference), report `status: blocked — d2 CLI not installed`, and stop.
+
+#### Step 5 — Quality gate
+
+Before reporting done, verify:
+1. `d2 fmt` passes with no error
+2. `d2 compile` produces an SVG file
+3. Every node has a meaningful label (not just its ID)
+4. Every connection has a label
+5. All major components from the architect's analysis are represented in the diagram
+
+#### Step 6 — Write session doc and report to user
+
+Write `session-docs/{feature}/05-diagram.md`:
+```markdown
+# D2 Diagram Summary: {feature}
+**Date:** {date}
+**Source:** session-docs/{feature}/diagram.d2
+**Output:** session-docs/{feature}/diagram.svg
+
+## Design Decisions
+- **Diagram type:** {architecture|sequence|ER|class|flowchart}
+- **Pattern used:** {microservices|monolith|event-driven|layered|client-server|CQRS|sequence|ER|flowchart}
+- **Layout engine:** {dagre (default)|elk}
+- **Node count:** {N top-level nodes/shapes}
+
+## Validation
+- d2 fmt: {PASS/FAIL}
+- SVG compile: {PASS/FAIL}
+
+## What the Diagram Shows
+{2-3 sentences describing what the diagram communicates}
+```
+
+Present to user:
+- Source file path: `session-docs/{feature}/diagram.d2`
+- SVG output path: `session-docs/{feature}/diagram.svg`
+- How to re-render with different themes: `d2 --theme 300 diagram.d2 dark.svg` (dark), `d2 --sketch diagram.d2 sketch.svg` (hand-drawn), `d2 --layout elk diagram.d2 elk.svg` (better edge routing)
+
+---
 
 ### Review Mode — Detailed Flow
 

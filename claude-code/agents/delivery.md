@@ -70,14 +70,30 @@ You will use this to:
 
 If no GitHub issue section exists, proceed without — this is not an error.
 
-### Step 3 — Create feature branch
+### Step 3 — Create or validate feature branch
 
 **Always create a dedicated branch for the delivery commit. The base branch is always `main`.**
 
-- If already on a feature/fix/hotfix branch, use it as-is
-- If on `main`, create and switch to a new branch:
+**Step 3.1 — Check current branch:**
+- Run `git rev-parse --abbrev-ref HEAD` to get the current branch name.
+
+**Step 3.2 — If on a feature/fix/hotfix branch, check its PR state:**
+```
+gh pr list --head {current-branch} --base main --state all --json number,state -q '.[0]'
+```
+- If PR state is `MERGED` or `CLOSED` → this branch was already delivered. **Do NOT reuse it.** Go to Step 3.3 to create a new branch.
+- If PR state is `OPEN` → the branch has an active PR. Use it as-is (new commits will update the existing PR).
+- If **no PR exists** → branch is fresh. Use it as-is.
+- If `gh` fails (no remote, no auth) → use the branch as-is and let Step 11 handle PR creation.
+
+**Step 3.3 — Create a new branch** (when on `main`, or when current branch has a merged/closed PR):
+- First, ensure you're on latest main: `git checkout main && git pull --ff-only origin main`
+- Then create the branch:
   - **With GitHub issue:** `git checkout -b feature/{issue-number}-{feature_name}`
   - **Without GitHub issue:** `git checkout -b feature/{feature_name}`
+- If the branch name already exists (from a previous delivery), append a suffix: `feature/{feature_name}-v2`, `-v3`, etc.
+- Cherry-pick or re-apply any uncommitted changes from the previous branch if needed.
+
 - Never commit directly to `main`
 
 ### Step 4 — Extract Knowledge
@@ -267,11 +283,22 @@ git add openapi/openapi.yaml  # only if updated in Step 8
 
 Do NOT stage unrelated files.
 
-### Step 11 — Create Pull Request
+### Step 11 — Create or Update Pull Request
 
-**Always create a PR targeting `main`.**
+**Always target `main`.**
 
-**Step 11.1 — Gather PR metadata:**
+**Step 11.0 — Check for existing PR:**
+
+Check if a PR already exists for the current branch:
+```
+gh pr list --head {branch-name} --base main --state all --json number,url,title,state -q '.[0]'
+```
+
+- If an **open PR** exists → go to Step 11.3 (update it)
+- If a **merged/closed PR** exists → this should NOT happen if Step 3 ran correctly. Report `status: failed` with message: "Branch {branch-name} has a merged/closed PR #{number}. A new branch should have been created in Step 3." Do NOT create or update any PR.
+- If **no PR at all** → create a new PR (Step 11.1)
+
+**Step 11.1 — Gather PR metadata (only for new PRs):**
 
 1. **Labels:** If a GitHub issue was detected in Step 2, read its labels: `gh issue view {number} --json labels -q '.labels[].name'`. Use those same labels on the PR. If no issue, detect the type from the feature context and use matching labels from the repo (`gh label list --json name -q '.[].name'`).
 
@@ -305,6 +332,33 @@ EOF
 )"
 ```
 
+**Step 11.3 — Update existing PR (when Step 11.0 found an open PR):**
+
+Update the existing PR's body with the latest delivery info:
+```
+gh pr edit {pr-number} \
+  --body "$(cat <<'EOF'
+Closes #{number}
+
+## Summary
+- {bullet points of what was done}
+
+## Changes
+- {files changed}
+
+## Tests
+- {test results}
+
+## Version
+- {old} → {new}
+EOF
+)"
+```
+
+Also update labels if they changed: `gh pr edit {pr-number} --add-label "{label1},{label2}"`
+
+Report the existing PR URL in the status block — do NOT fail.
+
 **Rules:**
 - `Closes #{number}` is **mandatory** when a GitHub issue exists — never omit it
 - `--label` uses labels from the linked issue. If no issue, infer from context (e.g., `bug`, `feature`, `enhancement`)
@@ -312,7 +366,8 @@ EOF
 - `--assignee @me` always
 - Base branch is always `main`
 - Title follows conventional commits format
-- If PR creation fails (e.g., no remote, no gh), report to the user
+- If PR creation/update fails (e.g., no remote, no gh), report to the user
+- **Never fail just because a PR already exists** — always detect and handle gracefully
 
 ---
 
@@ -359,7 +414,7 @@ Write delivery summary to `session-docs/{feature-name}/05-delivery.md`:
 - Branch: {branch-name}
 - Commit: {hash}
 - Message: {message}
-- PR: {url} (targeting main)
+- PR: {url} (targeting main) — {created | updated | already merged}
 
 ## Files Committed
 - {file list}
