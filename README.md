@@ -55,7 +55,7 @@ Dentro de Claude Code, escribes `/comando` y el sistema hace el resto:
 /init                   Bootstrap de CLAUDE.md en el repo actual
 /spike <descripcion>    Exploracion rapida sin pipeline completo
 /audit [target]         Health check de arquitectura
-/resume [feature]       Retoma un pipeline interrumpido
+/recover [feature]      Retoma un pipeline o batch interrumpido
 /status [feature]       Estado de pipelines activos
 /memory <action>        Gestiona la memoria persistente (Knowledge Graph)
 /lint                   Valida que agentes y skills esten sanos

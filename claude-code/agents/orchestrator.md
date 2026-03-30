@@ -151,7 +151,7 @@ Every task runs the COMPLETE pipeline: Specify → Design → Implement → Veri
 
 **Owner:** You (orchestrator)
 
-1. **Check for existing pipeline** — use Glob to check if `session-docs/{feature-name}/00-state.md` already exists with `status: in_progress` or `status: iterating`. If found, warn the user: "A pipeline for '{feature-name}' is already active at Phase {N}. Use `/resume {feature-name}` to continue it, or confirm you want to start fresh." Wait for confirmation before proceeding. This prevents duplicate pipelines for the same feature.
+1. **Check for existing pipeline** — use Glob to check if `session-docs/{feature-name}/00-state.md` already exists with `status: in_progress` or `status: iterating`. If found, warn the user: "A pipeline for '{feature-name}' is already active at Phase {N}. Use `/recover {feature-name}` to continue it, or confirm you want to start fresh." Wait for confirmation before proceeding. This prevents duplicate pipelines for the same feature.
 2. **MANDATORY — Query knowledge graph and write to file** — this is the FIRST action you take before any analysis. Search for related knowledge from past pipelines using ChromaDB MCP `search_nodes` with 2-3 semantic queries related to the project name, technologies, or components mentioned in the task (e.g., "Next.js authentication patterns", "Prisma serverless gotchas"). You MUST call `search_nodes` — do not skip this step. If ChromaDB MCP tools fail or are unavailable, log "KG: unavailable, skipping" and continue. If results are found, write them to `session-docs/{feature-name}/00-knowledge-context.md`:
    ```markdown
    # Knowledge Context
@@ -670,7 +670,7 @@ At the end of a successful orchestration, report to the user:
 
 When invoked with a `Direct Mode Task` (from a skill), execute only the specified flow — not the full pipeline. Set up session-docs as needed, invoke the agent, report results, and STOP. If a required prerequisite is missing, inform the user.
 
-**MANDATORY — KG consultation in direct modes:** Before invoking any agent in a direct mode, you MUST call ChromaDB MCP `search_nodes` with 1-2 semantic queries relevant to the task. If results are found, write `00-knowledge-context.md` (same format as Phase 0a Step 2) so the downstream agent has past insights. If ChromaDB MCP fails or is unavailable, log "KG: unavailable" and continue. The only exceptions are `init` and `resume` (which have no session-docs context to enrich).
+**MANDATORY — KG consultation in direct modes:** Before invoking any agent in a direct mode, you MUST call ChromaDB MCP `search_nodes` with 1-2 semantic queries relevant to the task. If results are found, write `00-knowledge-context.md` (same format as Phase 0a Step 2) so the downstream agent has past insights. If ChromaDB MCP fails or is unavailable, log "KG: unavailable" and continue. The only exceptions are `init` and `recover` (which have no session-docs context to enrich).
 
 | Mode | Agent | Prerequisites | Flow |
 |------|-------|--------------|------|
@@ -686,7 +686,8 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | diagram | `architect` (research) → `diagrammer` | none | see `orchestrator-modes.md` § Diagram Mode |
 | likec4-diagram | `architect` (research) → `likec4-diagrammer` | none | see `orchestrator-modes.md` § LikeC4 Diagram Mode |
 | d2-diagram | `architect` (research) → `d2-diagrammer` | none | see `orchestrator-modes.md` § D2 Diagram Mode |
-| resume | you (orchestrator) | `00-state.md` from `/resume` skill | read recovery context → resume pipeline from last checkpoint |
+| recover | you (orchestrator) | `00-state.md` from `/recover` skill | read recovery context → resume pipeline from last checkpoint |
+| recover-batch | you (orchestrator) | `batch-progress.md` from `/recover --batch` | re-launch worktrees for RUNNING/FAILED tasks |
 | spike | `implementer` | none | see `orchestrator-flows.md` § Spike Flow |
 | audit | `architect` (audit mode) | none | create session-docs → invoke → present `00-audit.md` |
 
