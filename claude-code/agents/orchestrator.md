@@ -641,7 +641,9 @@ If a task's tmux session is gone but no `.done` file exists → mark as `FAILED`
 
 ### Step 5 — Report consolidated results
 
-After all rounds:
+After all rounds, adapt report to remote availability:
+
+**With remote:**
 ```
 Batch complete:
 - Rounds: {N}
@@ -650,6 +652,23 @@ Batch complete:
 - Failures: {list or "none"}
 - Total time: {duration}
 ```
+
+**Without remote:**
+```
+Batch complete (local — no remote):
+- Rounds: {N}
+- Tasks: {total} ({parallel} in parallel, {sequential} sequential)
+- Branches created: {list}
+- Failures: {list or "none"}
+- Total time: {duration}
+
+Merge options:
+1. Merge all to main → git checkout main && git merge {branch1} && git merge {branch2} ...
+2. Merge selectively → I'll list each branch for you to approve
+3. Leave branches for manual review
+```
+
+Wait for user's choice before merging anything.
 
 ### Step 6 — Cleanup
 
@@ -668,6 +687,7 @@ Offer to clean completed worktrees. Do NOT auto-remove failed worktrees — user
 - **On failure:** report to user with options. Never auto-skip or auto-retry without user approval
 - **On user abort:** clean up worktrees and report partial results
 - **Recovery:** if the dispatcher itself dies, `/recover --batch` reads `batch-progress.md` and re-launches
+- **No remote:** delivery creates local branches only. Dispatcher offers merge options at the end
 
 ---
 

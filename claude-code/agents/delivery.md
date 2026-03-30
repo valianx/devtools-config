@@ -70,6 +70,21 @@ You will use this to:
 
 If no GitHub issue section exists, proceed without — this is not an error.
 
+### Step 2b — Detect remote availability
+
+Check if the repo has a remote and GitHub CLI is configured:
+
+```bash
+git remote get-url origin 2>/dev/null && echo "HAS_REMOTE" || echo "NO_REMOTE"
+gh auth status 2>/dev/null && echo "HAS_GH" || echo "NO_GH"
+```
+
+Set internal flags:
+- `has_remote: true/false` — controls push behavior (Step 10)
+- `has_gh: true/false` — controls PR creation (Step 11)
+
+These flags affect Steps 3, 10, and 11. All other steps run identically.
+
 ### Step 3 — Create or validate feature branch
 
 **Always create a dedicated branch for the delivery commit. The base branch is always `main`.**
@@ -78,16 +93,20 @@ If no GitHub issue section exists, proceed without — this is not an error.
 - Run `git rev-parse --abbrev-ref HEAD` to get the current branch name.
 
 **Step 3.2 — If on a feature/fix/hotfix branch, check its PR state:**
+
+If `has_gh: true`:
 ```
 gh pr list --head {current-branch} --base main --state all --json number,state -q '.[0]'
 ```
 - If PR state is `MERGED` or `CLOSED` → this branch was already delivered. **Do NOT reuse it.** Go to Step 3.3 to create a new branch.
 - If PR state is `OPEN` → the branch has an active PR. Use it as-is (new commits will update the existing PR).
 - If **no PR exists** → branch is fresh. Use it as-is.
-- If `gh` fails (no remote, no auth) → use the branch as-is and let Step 11 handle PR creation.
+
+If `has_gh: false` → skip PR check. Use the current branch as-is if it's a feature branch.
 
 **Step 3.3 — Create a new branch** (when on `main`, or when current branch has a merged/closed PR):
-- First, ensure you're on latest main: `git checkout main && git pull --ff-only origin main`
+- If `has_remote: true`: ensure you're on latest main: `git checkout main && git pull --ff-only origin main`
+- If `has_remote: false`: just `git checkout main` (no pull needed)
 - Then create the branch:
   - **With GitHub issue:** `git checkout -b feature/{issue-number}-{feature_name}`
   - **Without GitHub issue:** `git checkout -b feature/{feature_name}`
@@ -276,14 +295,22 @@ git add openapi/openapi.yaml  # only if updated in Step 8
 - `docs({feature_name}): add documentation, changelog, and version bump for <summary>`
 - Include OpenAPI mention if updated
 
-**Push:**
+**Push (only if `has_remote: true`):**
 - `git push origin {branch-name}`
 - Set upstream if needed: `git push --set-upstream origin {branch-name}`
 - Stop and report if branch is protected or push fails
 
+**If `has_remote: false`:** skip push. The branch and commit stay local. Report:
+```
+Branch {branch-name} committed locally (no remote configured).
+Ready for manual merge: git checkout main && git merge {branch-name}
+```
+
 Do NOT stage unrelated files.
 
-### Step 11 — Create or Update Pull Request
+### Step 11 — Create or Update Pull Request (skip if no remote)
+
+**If `has_remote: false` or `has_gh: false`:** skip this entire step. Report the branch name and suggest manual merge instead. Jump to session documentation.
 
 **Always target `main`.**
 
