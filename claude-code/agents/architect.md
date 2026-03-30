@@ -140,11 +140,31 @@ Each task in the breakdown must be **small enough to implement in one focused se
    - Title (imperative, max 70 chars)
    - Clear description of what needs to be done
    - Suggested label (`feature`, `fix`, `refactor`, `enhancement`)
+   - **Dispatch label** (see Dispatch Classification below)
    - Acceptance criteria in Given/When/Then format (max 20 per task — if more, the task is too large and must be split)
    - Files and components affected
    - Architecture guidance (brief — what pattern to follow, what interfaces to respect)
    - Estimated complexity (`simple` / `standard` / `complex`)
    - Dependencies on other tasks in the breakdown
+   - **Blocks** (which other tasks depend on this one — inverse of Dependencies)
+
+#### Dispatch Classification (mandatory)
+
+Every task MUST have exactly one dispatch label. The orchestrator uses these to build execution rounds:
+
+| Label | Meaning | How the orchestrator treats it |
+|-------|---------|-------------------------------|
+| `BLOCKER` | Blocks other tasks — must complete first | Scheduled in the earliest possible round. Other tasks wait for it. |
+| `PARALLEL` | Independent — can run alongside any task in the same round | Grouped with other PARALLEL tasks in the same round. |
+| `CONVERGENCE` | Sync point — needs 2+ upstream tasks to complete first | Scheduled only after ALL its dependencies are done. |
+| `SEQUENTIAL` | Ordered within its stream — depends on exactly 1 prior task | Runs after its single dependency, can parallelize with other streams. |
+
+**Classification rules:**
+- If a task has no dependencies AND blocks 2+ other tasks → `BLOCKER`
+- If a task has no dependencies AND blocks 0-1 tasks → `PARALLEL`
+- If a task depends on 2+ tasks from different streams → `CONVERGENCE`
+- If a task depends on exactly 1 task → `SEQUENTIAL`
+- When in doubt between PARALLEL and SEQUENTIAL → prefer PARALLEL (enables more parallelism)
 
 #### Planning Output Template
 
@@ -168,9 +188,11 @@ Write to `session-docs/{feature-name}/01-planning.md`:
 
 #### Task 1: {imperative title}
 - **Label:** {feature/fix/refactor/enhancement}
+- **Dispatch:** {BLOCKER/PARALLEL/CONVERGENCE/SEQUENTIAL}
 - **Complexity:** {simple/standard/complex}
 - **Group:** {group name}
 - **Dependencies:** {none | Task N}
+- **Blocks:** {Task M, Task P | none}
 - **Description:** {what needs to be done}
 - **Acceptance Criteria:**
   - [ ] AC-1: Given {context}, When {action}, Then {result}
@@ -183,16 +205,26 @@ Write to `session-docs/{feature-name}/01-planning.md`:
 
 (Repeat groups as needed. Each group represents a logical area of work.)
 
+## Dispatch Map
+| Task | Dispatch | Dependencies | Blocks | Round |
+|------|----------|-------------|--------|-------|
+| 1. {title} | BLOCKER | none | 2, 3 | 1 |
+| 2. {title} | SEQUENTIAL | 1 | 4, 5 | 2 |
+| 3. {title} | PARALLEL | 1 | none | 2 |
+| 4. {title} | PARALLEL | 2 | none | 3 |
+| 5. {title} | CONVERGENCE | 2, 3 | none | 3 |
+
+**Execution plan:**
+- Round 1: {BLOCKER tasks} — resolve these first
+- Round 2: {PARALLEL + SEQUENTIAL tasks whose deps are in Round 1}
+- Round 3: {CONVERGENCE + remaining tasks}
+
 ## Summary
 | Group | Tasks | Simple | Standard | Complex |
 |-------|-------|--------|----------|---------|
 | {group} | {count} | {count} | {count} | {count} |
 | **Total** | **{N}** | | | |
-
-## Suggested Order
-1. Task {N} — {reason: foundational, no dependencies}
-2. Task {M} — {reason: depends on Task N}
-3. ...
+| **Dispatch** | BLOCKER: {N} | PARALLEL: {N} | CONVERGENCE: {N} | SEQUENTIAL: {N} |
 
 ## Risks & Considerations
 - {risk or cross-cutting concern}

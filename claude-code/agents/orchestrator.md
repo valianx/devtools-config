@@ -552,20 +552,33 @@ mkdir -p /tmp/batch-results
 rm -f /tmp/batch-results/*.done  # clean from previous runs
 ```
 
-### Step 2 — Analyze dependencies
+### Step 2 — Read dispatch labels
 
-For each task, determine if it depends on another task in the batch:
-- Read the issue descriptions and technical context
-- Tasks that touch the same files or build on each other have dependencies
-- Tasks that are independent (different areas, no shared code) can run in parallel
+If the batch comes from `/plan` or `/plan-and-execute`, read the **Dispatch Map** table from `01-planning.md`. The architect already classified each task:
 
-### Step 3 — Group into rounds (topological sort)
+| Label | Meaning | Scheduling rule |
+|-------|---------|----------------|
+| `BLOCKER` | Blocks other tasks | Schedule first. Nothing runs until BLOCKERs complete. |
+| `PARALLEL` | Independent | Group with other PARALLEL tasks in same round. |
+| `CONVERGENCE` | Needs 2+ upstream tasks | Schedule only after ALL dependencies done. |
+| `SEQUENTIAL` | Ordered in its stream | Runs after its single dependency. Can parallelize with other streams. |
 
-- **Round 1:** tasks with no dependencies (foundational)
-- **Round 2:** tasks whose dependencies are all in Round 1
-- **Round N:** tasks whose dependencies are all in Rounds < N
+If the batch comes from `/issue` (multiple issues without planning), analyze dependencies yourself:
+- Read issue descriptions and technical context
+- Tasks that touch the same files or build on each other → SEQUENTIAL
+- Tasks that are independent → PARALLEL
+- Tasks that multiple others depend on → BLOCKER
 
-If all tasks are independent → single round, all parallel.
+### Step 3 — Build execution rounds
+
+Using dispatch labels and the dependency graph:
+
+1. **Round 1:** all `BLOCKER` tasks + `PARALLEL` tasks with no dependencies
+2. **Round 2:** `SEQUENTIAL` tasks whose dependency is in Round 1 + `PARALLEL` tasks whose deps are in Round 1
+3. **Round N:** `CONVERGENCE` tasks (only when ALL their dependencies across rounds are done) + remaining `SEQUENTIAL`/`PARALLEL`
+4. Tasks in the same round run in parallel (separate worktrees)
+
+**Priority within rounds:** BLOCKERs first, then SEQUENTIAL, then PARALLEL. If a round has a single BLOCKER, run it alone in the current session (faster than spawning a worktree).
 
 ### Step 4 — Execute a round
 
