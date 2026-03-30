@@ -67,64 +67,12 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
 
 ## Parallel Dispatch Flow (plan-and-execute with multiple tasks)
 
-When `plan-and-execute` produces multiple tasks, dispatch them efficiently using dependency analysis and worktrees.
+Parallel dispatch is defined in the orchestrator's **Multi-Task Orchestration** section. This reference only covers the `plan-and-execute` entry point.
 
-### Step 1 — Build dependency graph
-
-Read `01-planning.md` and extract:
-- Task list with IDs
-- Dependencies between tasks (Task B depends on Task A)
-
-### Step 2 — Topological sort into rounds
-
-Group tasks into rounds where all tasks in a round are independent of each other:
-- **Round 1:** tasks with no dependencies (foundational)
-- **Round 2:** tasks whose dependencies are all in Round 1
-- **Round N:** tasks whose dependencies are all in Rounds < N
-
-### Step 3 — Execute rounds sequentially
-
-For each round:
-
-**If 1 task in round:** run it in the current session (normal pipeline).
-
-**If 2+ tasks in round:**
-
-1. **Determine base branch:**
-   - Round 1 → branch from `main`
-   - Round N → branch from the completed branch of the dependency in Round N-1
-
-2. **Launch parallel instances:**
-   ```bash
-   claude --worktree {task-name} --tmux --dangerously-skip-permissions -p "/issue #{number}"
-   ```
-   One command per task in the round.
-
-3. **Monitor progress:**
-   - Check `session-docs/{feature}/00-state.md` in each worktree
-   - Wait for all instances in the round to complete before starting next round
-
-4. **Collect results:**
-   - Read status from each worktree's session-docs
-   - Log results in `batch-progress.md`
-
-### Step 4 — Report consolidated results
-
-After all rounds complete:
-```
-Parallel execution complete:
-- Rounds: {N}
-- Tasks: {total} ({parallel} in parallel, {sequential} sequential)
-- PRs created: {list with URLs}
-- Branches: {list}
-- Failures: {list or "none"}
-```
-
-### Step 5 — Cleanup
-
-```bash
-git worktree remove {worktree-path}  # per worktree
-```
+When `plan-and-execute` produces multiple tasks:
+1. The orchestrator reads `01-planning.md` for dependency info
+2. Follows the **Multi-Task Orchestration** flow (dependency analysis → rounds → hooks + inotifywait → event-driven monitoring)
+3. Each worktree runs a full pipeline via `/issue #{number}`
 
 ### Branching strategy
 
@@ -134,21 +82,6 @@ Tasks in later rounds depend on code from earlier rounds. Use **branch-from-pare
 - When Round 1's PR merges, Round 2's PRs auto-rebase cleanly
 
 This mirrors how human teams work with dependent features.
-
-### Batch Progress Tracking
-
-Track state in `session-docs/batch-progress.md`:
-
-```markdown
-# Batch Progress
-| # | Task | Round | Status | Branch | PR |
-|---|------|-------|--------|--------|----|
-| 1 | {title} | 1 | DONE | feature/101-x | #101 |
-| 2 | {title} | 2 | RUNNING | feature/102-y | — |
-| 3 | {title} | 2 | RUNNING | feature/103-z | — |
-```
-
-**Status values:** `PENDING → RUNNING → DONE → FAILED`
 
 ---
 

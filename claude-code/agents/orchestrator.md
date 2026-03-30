@@ -527,9 +527,11 @@ Using the ChromaDB MCP tools (if available), save the most reusable insights as 
 
 ## Multi-Task Orchestration
 
-When multiple tasks are received (batch from `/issue` or `/plan`), dispatch them efficiently using dependency analysis and parallel worktrees.
+When multiple tasks are received (batch from `/issue` or `/plan`), dispatch them using dependency analysis, parallel worktrees, and event-driven monitoring via hooks.
 
-### Step 1 — Create progress file
+**Architecture:** The dispatcher (you) stays alive throughout the batch. Worktrees notify completion via hooks. You react only when a result arrives — zero cost during wait.
+
+### Step 1 — Create progress file and results directory
 
 Create `session-docs/batch-progress.md`:
 
@@ -543,6 +545,12 @@ Create `session-docs/batch-progress.md`:
 ```
 
 **Status values:** `PENDING → RUNNING → DONE → FAILED`
+
+Create the results directory:
+```bash
+mkdir -p /tmp/batch-results
+rm -f /tmp/batch-results/*.done  # clean from previous runs
+```
 
 ### Step 2 — Analyze dependencies
 
@@ -559,26 +567,77 @@ For each task, determine if it depends on another task in the batch:
 
 If all tasks are independent → single round, all parallel.
 
-### Step 4 — Execute rounds
+### Step 4 — Execute a round
 
-For each round, sequentially:
-
-**If 1 task in round:** run it in the current session (normal full pipeline).
+**If 1 task in round:** run it in the current session (normal full pipeline). Update `batch-progress.md` and proceed to next round.
 
 **If 2+ tasks in round:**
 
-1. **Determine base branch:**
-   - Round 1 → branch from `main`
-   - Round N → branch from the completed branch of the dependency in Round N-1
+#### 4a. Determine base branch
+- Round 1 → branch from `main`
+- Round N → branch from the completed branch of the dependency in Round N-1
 
-2. **Launch parallel instances** — one per task:
-   ```bash
-   claude --worktree {task-name} --tmux --dangerously-skip-permissions -p "/issue #{number}"
+#### 4b. Launch parallel instances with completion hooks
+
+For each task in the round, launch a worktree with a `Stop` hook that writes the result to a shared directory:
+
+```bash
+claude --worktree {task-name} --tmux --dangerously-skip-permissions \
+  --settings '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"cp session-docs/*/00-state.md /tmp/batch-results/{task-name}.done 2>/dev/null; echo {task-name} >> /tmp/batch-results/completed.log"}]}]}}' \
+  -p "/issue #{number}"
+```
+
+Update `batch-progress.md`: mark each launched task as `RUNNING`.
+
+Report to user:
+```
+⚡ Round {N}: launched {count} tasks in parallel
+   - {task-1} (worktree: {name})
+   - {task-2} (worktree: {name})
+   Waiting for results...
+```
+
+#### 4c. Wait for results (event-driven, $0 cost)
+
+Use `inotifywait` to block until a `.done` file appears — this costs zero tokens while waiting:
+
+```bash
+# Block until a .done file is created (WSL/Linux)
+inotifywait -q -e create --format '%f' /tmp/batch-results/ 2>/dev/null || \
+  # Fallback for systems without inotifywait: poll every 15s
+  while [ $(ls /tmp/batch-results/*.done 2>/dev/null | wc -l) -lt {expected_count} ]; do sleep 15; done
+```
+
+**Each time a `.done` file appears**, the LLM wakes up and:
+
+1. Read the `.done` file to get the pipeline result (phase, status, summary)
+2. Update `batch-progress.md` with the result
+3. Report to user:
    ```
+   ✓ Task {name} completed — {summary from 00-state.md}
+     {N}/{total} tasks in round done
+   ```
+   Or if failed:
+   ```
+   ✗ Task {name} failed — Phase {N}: {error summary}
+     Options:
+     1. See error details
+     2. Re-launch this task
+     3. Skip and continue
+     4. Abort batch
+   ```
+4. If all tasks in the round are done → proceed to next round (Step 4)
+5. If tasks remain → loop back to wait
 
-3. **Wait for all instances** in the round to complete before starting next round.
+#### 4d. Verify with tmux (if result file is missing)
 
-4. **Update `batch-progress.md`** with results from each instance.
+If a tmux session dies without writing a `.done` file (crash), detect it:
+
+```bash
+tmux list-sessions -F '#{session_name}' 2>/dev/null
+```
+
+If a task's tmux session is gone but no `.done` file exists → mark as `FAILED` in `batch-progress.md`, report to user, ask how to proceed.
 
 ### Step 5 — Report consolidated results
 
@@ -586,17 +645,29 @@ After all rounds:
 ```
 Batch complete:
 - Rounds: {N}
-- Tasks: {total} ({parallel} parallel, {sequential} sequential)
+- Tasks: {total} ({parallel} in parallel, {sequential} sequential)
 - PRs: {list with URLs}
 - Failures: {list or "none"}
+- Total time: {duration}
 ```
+
+### Step 6 — Cleanup
+
+```bash
+rm -rf /tmp/batch-results/                    # clean results
+git worktree remove {path}                    # per completed worktree
+```
+
+Offer to clean completed worktrees. Do NOT auto-remove failed worktrees — user may want to inspect.
 
 ### Rules
 
-- **Before each task:** always read `batch-progress.md` first (mandatory after compaction)
+- **Dispatcher stays alive** throughout the entire batch — never fire-and-forget
+- **Before each round:** always read `batch-progress.md` first (mandatory after compaction)
 - **Each task** gets its own `session-docs/{feature-name}/` folder — never mix tasks
-- **Worktree cleanup:** `git worktree remove {path}` after each round completes
-- **If a parallel task fails:** other tasks in the same round continue. Report the failure and ask user how to proceed.
+- **On failure:** report to user with options. Never auto-skip or auto-retry without user approval
+- **On user abort:** clean up worktrees and report partial results
+- **Recovery:** if the dispatcher itself dies, `/recover --batch` reads `batch-progress.md` and re-launches
 
 ---
 
