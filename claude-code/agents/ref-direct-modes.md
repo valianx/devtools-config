@@ -1,5 +1,5 @@
 ---
-name: orchestrator-modes
+name: ref-direct-modes
 description: Reference file for orchestrator direct modes (diagram, likec4, d2, review). Read on-demand by the orchestrator — not a standalone agent.
 model: opus
 color: cyan

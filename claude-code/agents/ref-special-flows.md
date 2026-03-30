@@ -1,5 +1,5 @@
 ---
-name: orchestrator-flows
+name: ref-special-flows
 description: Reference file for orchestrator special flows (research, spike, plan, parallel dispatch, refactor, simple). Read on-demand by the orchestrator — not a standalone agent.
 model: opus
 color: cyan

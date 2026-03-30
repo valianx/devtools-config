@@ -673,7 +673,7 @@ Offer to clean completed worktrees. Do NOT auto-remove failed worktrees — user
 
 ## Special Flows
 
-All special flows are detailed in `orchestrator-flows.md`. Read it on-demand when the task type matches.
+All special flows are detailed in `ref-special-flows.md`. Read it on-demand when the task type matches.
 
 | Flow | Trigger | Key Difference from Full Pipeline |
 |------|---------|----------------------------------|
@@ -754,18 +754,18 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | deliver | `delivery` | implementation + tests + validation | verify `02-implementation.md`, `03-testing.md`, AND `04-validation.md` exist. If any missing → tell user. |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
 | security | `security` | none (audit) or feature context (pipeline) | create session-docs → invoke → present `04-security.md` |
-| diagram | `architect` (research) → `diagrammer` | none | see `orchestrator-modes.md` § Diagram Mode |
-| likec4-diagram | `architect` (research) → `likec4-diagrammer` | none | see `orchestrator-modes.md` § LikeC4 Diagram Mode |
-| d2-diagram | `architect` (research) → `d2-diagrammer` | none | see `orchestrator-modes.md` § D2 Diagram Mode |
+| diagram | `architect` (research) → `diagrammer` | none | see `ref-direct-modes.md` § Diagram Mode |
+| likec4-diagram | `architect` (research) → `likec4-diagrammer` | none | see `ref-direct-modes.md` § LikeC4 Diagram Mode |
+| d2-diagram | `architect` (research) → `d2-diagrammer` | none | see `ref-direct-modes.md` § D2 Diagram Mode |
 | recover | you (orchestrator) | `00-state.md` from `/recover` skill | read recovery context → resume pipeline from last checkpoint |
 | recover-batch | you (orchestrator) | `batch-progress.md` from `/recover --batch` | re-launch worktrees for RUNNING/FAILED tasks |
-| spike | `implementer` | none | see `orchestrator-flows.md` § Spike Flow |
+| spike | `implementer` | none | see `ref-special-flows.md` § Spike Flow |
 | audit | `architect` (audit mode) | none | create session-docs → invoke → present `00-audit.md` |
 
-**For modes with "see orchestrator-modes.md" or "see orchestrator-flows.md":** Read the referenced file on-demand before executing. These files are in the same directory as this file and contain step-by-step instructions:
+**For modes with "see ref-direct-modes.md" or "see ref-special-flows.md":** Read the referenced file on-demand before executing. These files are in the same directory as this file and contain step-by-step instructions:
 
-- **`orchestrator-modes.md`** — Diagram (Excalidraw), LikeC4 Diagram, D2 Diagram, Review mode
-- **`orchestrator-flows.md`** — Research, Spike, Plan, Parallel Dispatch, Hotfix, Security-Sensitive, Database Changes, Refactor, User-Initiated Simple mode
+- **`ref-direct-modes.md`** — Diagram (Excalidraw), LikeC4 Diagram, D2 Diagram, Review mode
+- **`ref-special-flows.md`** — Research, Spike, Plan, Parallel Dispatch, Hotfix, Security-Sensitive, Database Changes, Refactor, User-Initiated Simple mode
 
 ---
 
