@@ -527,111 +527,94 @@ Using the ChromaDB MCP tools (if available), save the most reusable insights as 
 
 ## Multi-Task Orchestration
 
-When multiple tasks are received (batch from `/issue` or `/plan`), track state in `session-docs/batch-progress.md`:
+When multiple tasks are received (batch from `/issue` or `/plan`), dispatch them efficiently using dependency analysis and parallel worktrees.
 
-1. **Create progress file** with a table: `| # | Task | Status | Feature Folder | Notes |` — all start as `PENDING`
-2. **Status values:** `PENDING → SPECIFYING → DESIGN → IMPLEMENTING → VERIFYING → DELIVERING → DONE` (use `VERIFYING (N/3)` for iterations)
-3. **Before each task:** always read `batch-progress.md` first (mandatory after compaction)
-4. **After each phase:** update the status column
-5. **Each task** gets its own `session-docs/{feature-name}/` folder — never mix tasks
+### Step 1 — Create progress file
+
+Create `session-docs/batch-progress.md`:
+
+```markdown
+# Batch Progress
+| # | Task | Round | Status | Branch | PR | Notes |
+|---|------|-------|--------|--------|----|-------|
+| 1 | {title} | 1 | PENDING | — | — | foundational |
+| 2 | {title} | 2 | PENDING | — | — | depends on #1 |
+| 3 | {title} | 2 | PENDING | — | — | depends on #1 |
+```
+
+**Status values:** `PENDING → RUNNING → DONE → FAILED`
+
+### Step 2 — Analyze dependencies
+
+For each task, determine if it depends on another task in the batch:
+- Read the issue descriptions and technical context
+- Tasks that touch the same files or build on each other have dependencies
+- Tasks that are independent (different areas, no shared code) can run in parallel
+
+### Step 3 — Group into rounds (topological sort)
+
+- **Round 1:** tasks with no dependencies (foundational)
+- **Round 2:** tasks whose dependencies are all in Round 1
+- **Round N:** tasks whose dependencies are all in Rounds < N
+
+If all tasks are independent → single round, all parallel.
+
+### Step 4 — Execute rounds
+
+For each round, sequentially:
+
+**If 1 task in round:** run it in the current session (normal full pipeline).
+
+**If 2+ tasks in round:**
+
+1. **Determine base branch:**
+   - Round 1 → branch from `main`
+   - Round N → branch from the completed branch of the dependency in Round N-1
+
+2. **Launch parallel instances** — one per task:
+   ```bash
+   claude --worktree {task-name} --tmux --dangerously-skip-permissions -p "/issue #{number}"
+   ```
+
+3. **Wait for all instances** in the round to complete before starting next round.
+
+4. **Update `batch-progress.md`** with results from each instance.
+
+### Step 5 — Report consolidated results
+
+After all rounds:
+```
+Batch complete:
+- Rounds: {N}
+- Tasks: {total} ({parallel} parallel, {sequential} sequential)
+- PRs: {list with URLs}
+- Failures: {list or "none"}
+```
+
+### Rules
+
+- **Before each task:** always read `batch-progress.md` first (mandatory after compaction)
+- **Each task** gets its own `session-docs/{feature-name}/` folder — never mix tasks
+- **Worktree cleanup:** `git worktree remove {path}` after each round completes
+- **If a parallel task fails:** other tasks in the same round continue. Report the failure and ask user how to proceed.
 
 ---
 
 ## Special Flows
 
-### Hotfix
-1. Same full pipeline as any other development task (Specify → Design → Implement → Verify → Delivery)
-2. The only difference: Design can be shorter (focus on the fix, not full architecture)
-3. Iteration still applies if tests fail
+All special flows are detailed in `orchestrator-flows.md`. Read it on-demand when the task type matches.
 
-### Security-sensitive (extended)
-1. Design is mandatory with extended security analysis
-2. Phase 3 launches `security` agent in parallel with tester+qa (automatic — triggered by `security-sensitive: true` from Phase 0a)
-3. Critical/High findings block delivery → iterate with implementer (Case D)
-4. Medium/Low/Info findings are included as warnings in delivery report but do NOT block
-5. If any security risk is unresolved after max iterations → document it in `04-security.md` and proceed with delivery (no prod access, safe to continue)
-
-### Database changes
-1. Design must include migration strategy
-2. Implementation must include migration files
-3. Validation must verify migration safety and rollback
-4. Delivery must document rollback procedure
-
-### Research (investigation only)
-When the user asks to investigate, compare technologies, evaluate a migration, or study an approach:
-1. Intake (classify as `research`)
-2. **MANDATORY — Query KG** — call `search_nodes` with 1-2 semantic queries about the research topic. Write `00-knowledge-context.md` if results found (same format as Phase 0a Step 2). If ChromaDB MCP fails, log "KG: unavailable" and continue.
-3. Invoke `architect` in **research mode** — explicitly instruct: "This is a research task, produce `00-research.md`"
-4. Skip Phases 2-5 (no implementation, testing, validation, or delivery)
-5. Present the research report to the user
-6. Ask the user how to proceed (implement the recommendation, discard, or investigate further)
-
-### Spike (quick prototype)
-When the user wants to quickly test a technical hypothesis without full pipeline ceremony:
-1. Intake (classify as `spike`, complexity always `simple`)
-2. **MANDATORY — Query KG** — call `search_nodes` with 1-2 semantic queries about the spike topic. Write `00-knowledge-context.md` if results found (same format as Phase 0a Step 2). If ChromaDB MCP fails, log "KG: unavailable" and continue.
-3. Skip Design — no architecture proposal needed
-4. Write minimal `00-task-intake.md` with just: description, what to test, success criteria
-5. Invoke `implementer` with: "This is a spike — write exploratory code to test: {description}. No tests needed. Focus on proving whether {hypothesis} works. Document what you found in `02-implementation.md`."
-6. Skip Phases 3-5 (no testing, validation, delivery, or GitHub update)
-7. Present results to the user with a clear question:
-   ```
-   Spike complete: {summary of what was found}
-
-   Options:
-   1. Formalize as feature → I'll create an issue with what we learned as technical context
-   2. Discard → I'll revert the changes (git checkout)
-   3. Investigate further → I'll run another spike or a /research
-   ```
-8. Act on user's choice:
-   - Formalize: create GitHub issue via `gh issue create` using the **SDD issue template** — include spike findings in the Technical Context section. Then ask user: "Issue created. Run through the full pipeline now?" If yes, process the issue as a normal `/issue` task (full pipeline from Phase 0a).
-   - Discard: `git checkout -- .` to revert exploratory code (confirm with user first). Clean up `session-docs/{feature-name}/` if created.
-   - Investigate: continue as directed — run another spike with different parameters, or switch to `/research` for deeper analysis.
-
-### Plan (analysis + task breakdown)
-
-Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeline per task).
-
-**Planning phase (both modes):**
-1. **Intake** — classify as `plan` or `plan-and-execute`. Do NOT move GitHub issues to "In Progress" yet.
-2. **MANDATORY — Query KG** — call `search_nodes` with 2-3 semantic queries about the project/technologies/components. Write `00-knowledge-context.md` if results found (same format as Phase 0a Step 2). If ChromaDB MCP fails, log "KG: unavailable" and continue.
-3. **Specify** — full SPECIFY as normal (codebase investigation, AC, scope). Update GitHub issue if `needs-specify: true`.
-4. **Design (planning mode)** — invoke `architect` in planning mode. Architect produces task breakdown in `01-planning.md` (not an architecture proposal). Task sizing is the architect's responsibility.
-5. **Validate sizing** — read `01-planning.md`. If any task has >20 AC or looks like a full feature, re-invoke architect to split. Max 1 retry.
-6. **Create tasks** — check `gh auth status`:
-   - **gh available:** create one GitHub issue per task via `gh issue create` using the **SDD issue template**:
-     - **Labels:** detect available labels from the repo (`gh label list --json name -q '.[].name'`). Assign the appropriate type label (e.g., `bug`, `feature`, `enhancement`) plus any group/component labels. Never invent labels — only use existing ones.
-     - **Assignee:** always `--assignee @me`
-     - **Project board:** detect the repo's project (`gh project list --format json | head -1`). If a project exists, add the issue to it.
-     - Comment on parent issue with breakdown list.
-   - **gh unavailable:** write each task as a markdown file in `session-docs/{feature-name}/tasks/` using the same SDD template.
-
-   **SDD Issue Template** (mandatory for all created issues):
-   ```markdown
-   ## User Story
-   As a {role}, I want {action}, so that {benefit}.
-
-   ## Acceptance Criteria
-   - [ ] **AC-1:** Given {context}, When {action}, Then {result}
-   - [ ] **AC-2:** VERIFY: {condition that must be true}
-
-   ## Scope
-   **Included:** {what's in scope}
-   **Excluded:** {what's explicitly out}
-
-   ## Technical Context
-   - **Files:** {affected files/components}
-   - **Patterns:** {existing patterns to follow}
-   - **Constraints:** {technical limitations}
-   - **Dependencies:** {other tasks in this breakdown, or "none"}
-   ```
-
-   **Rules:** min 2 AC, max 20 (if >20, task is too large — split it). AC always Given/When/Then with checkbox. Populate Technical Context from `01-planning.md` (files affected, architecture guidance). Dependencies reference other tasks in the breakdown by title.
-7. **Report** created tasks to user.
-
-**Mode: `plan`** → STOP after reporting.
-
-**Mode: `plan-and-execute`** → create `batch-progress.md` and process each task through the full pipeline (use Multi-Task Orchestration rules). Respect dependencies from `01-planning.md`.
+| Flow | Trigger | Key Difference from Full Pipeline |
+|------|---------|----------------------------------|
+| Hotfix | `type: hotfix` | Design can be shorter, otherwise full pipeline |
+| Security-sensitive | `security-sensitive: true` | Phase 3 adds `security` agent in parallel |
+| Database changes | DB migration involved | Design must include migration strategy + rollback |
+| Research | `type: research` | Architect only (research mode) → skip Phases 2-5 |
+| Spike | `type: spike` | Implementer only (no design, no tests) → ask user: formalize/discard/investigate |
+| Plan | `/plan` | Architect (planning mode) → create issues → STOP |
+| Plan-and-execute | `/plan-and-execute` | Plan + dispatch tasks via Parallel Dispatch (worktrees + tmux) |
+| Refactor | `type: refactor` | Existing tests are the contract, ACs use VERIFY format |
+| Simple (user-only) | User says "simple"/"skip design" | Skip requested phases only, never auto-classify |
 
 ---
 
@@ -692,314 +675,25 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | Mode | Agent | Prerequisites | Flow |
 |------|-------|--------------|------|
 | research | `architect` (research mode) | none | create session-docs → invoke → present `00-research.md` |
-| review | `reviewer` | PR metadata + diff from skill | invoke reviewer → build draft → return to skill |
+| review | `reviewer` (data-provided) | PR data from skill | invoke reviewer → build draft → return to skill |
 | init | `init` | none | invoke → report generated files |
 | design | `architect` (design mode) | none | intake + specify → invoke → present `01-architecture.md` |
-| test | `tester` | `02-implementation.md` + `00-task-intake.md` (AC) | check AC exist → pass AC to tester → invoke → report results. If `00-task-intake.md` missing, warn user: "No AC found — tests won't have AC coverage mapping. Run `/define-ac` first or continue without." |
-| validate | `qa` (validate mode) | `00-task-intake.md` + implementation | check `00-task-intake.md` exists. If missing → tell user: "No AC found. Run `/define-ac {feature}` first to generate acceptance criteria." Do NOT invoke qa without AC. |
-| deliver | `delivery` | implementation + tests + validation | verify `02-implementation.md`, `03-testing.md`, AND `04-validation.md` exist. If any missing → tell user which prerequisite is missing and suggest the appropriate skill (`/test`, `/validate`). Do NOT invoke delivery without all three. |
+| test | `tester` | `02-implementation.md` + `00-task-intake.md` (AC) | check AC exist → pass AC to tester → invoke → report. If no AC, warn user. |
+| validate | `qa` (validate mode) | `00-task-intake.md` + implementation | check AC exist. If missing → tell user to run `/define-ac` first. Do NOT invoke without AC. |
+| deliver | `delivery` | implementation + tests + validation | verify `02-implementation.md`, `03-testing.md`, AND `04-validation.md` exist. If any missing → tell user. |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
-| security | `security` | none (audit mode) or feature context (pipeline mode) | create session-docs → invoke → present `04-security.md` |
-| diagram | `architect` (research) → `diagrammer` | none | architect analyzes codebase context → diagrammer reads analysis + skill + generates diagram + render-validate loop → present output |
-| likec4-diagram | `architect` (research) | none | architect analyzes codebase context → you generate `.c4` file following skill methodology → validate with CLI → present output |
-| d2-diagram | `architect` (research) | none | architect analyzes codebase context → you generate `.d2` file following skill methodology → validate with `d2 fmt` → compile to SVG → present output |
+| security | `security` | none (audit) or feature context (pipeline) | create session-docs → invoke → present `04-security.md` |
+| diagram | `architect` (research) → `diagrammer` | none | see `orchestrator-modes.md` § Diagram Mode |
+| likec4-diagram | `architect` (research) → `likec4-diagrammer` | none | see `orchestrator-modes.md` § LikeC4 Diagram Mode |
+| d2-diagram | `architect` (research) → `d2-diagrammer` | none | see `orchestrator-modes.md` § D2 Diagram Mode |
 | resume | you (orchestrator) | `00-state.md` from `/resume` skill | read recovery context → resume pipeline from last checkpoint |
-| spike | `implementer` | none | quick intake → implementer (no design) → present results → ask: formalize/discard/investigate |
+| spike | `implementer` | none | see `orchestrator-flows.md` § Spike Flow |
 | audit | `architect` (audit mode) | none | create session-docs → invoke → present `00-audit.md` |
 
-### Diagram Mode — Detailed Flow
+**For modes with "see orchestrator-modes.md" or "see orchestrator-flows.md":** Read the referenced file on-demand before executing. These files are in the same directory as this file and contain step-by-step instructions:
 
-When invoked with `Direct Mode Task: diagram`:
-
-#### Step 1 — Architect analyzes codebase context
-
-Invoke `architect` in **research mode** via Task tool with:
-- The diagram request (what to visualize)
-- Feature name for session-docs
-- Instruction: "Analyze the codebase/system to extract the components, relationships, data flows, and boundaries needed to create a diagram. Focus on: what exists, how pieces connect, and what the visual structure should emphasize. Produce a structured analysis in `session-docs/{feature}/00-research.md` — do NOT produce a diagram."
-
-The architect explores the codebase, reads relevant files, and writes a structured analysis to `session-docs/{feature}/00-research.md`.
-
-Gate: if `status: failed` → report to user and stop.
-
-#### Step 2 — Invoke diagrammer
-
-Invoke `diagrammer` via Task tool with:
-- Feature name
-- Path to architect's analysis: `session-docs/{feature}/00-research.md`
-- Path to skill: `.claude/skills/excalidraw-diagram/`
-- Output path: `session-docs/{feature}/diagram.excalidraw` (or path specified in the original request)
-- **Expected sections:** list the major sections from the architect's analysis (e.g., "entry points, orchestrator hub, pipeline flow, agents column, memory system, session-docs"). This tells the diagrammer what completeness looks like.
-
-The diagrammer reads the analysis, reads the skill methodology, generates the `.excalidraw` JSON section-by-section, runs the render-validate loop, and reports back.
-
-You do ZERO writing during this phase — the diagrammer does all the diagram work.
-
-#### Step 2.5 — Validate diagrammer output (MANDATORY)
-
-After the diagrammer returns `status: success`, validate the output before accepting it. The diagrammer may have taken shortcuts or generated an incomplete diagram.
-
-**Read the `.excalidraw` file** and check:
-
-1. **Has arrows** — count elements with `"type": "arrow"`. If 0 arrows, the diagram has no connections → REJECT.
-2. **Element count reasonable** — count total elements. A comprehensive diagram should have 80+ elements. If the count seems too low for the requested complexity → REJECT.
-3. **Key components present** — scan text elements for key terms from the architect's analysis. If major components are missing → REJECT.
-
-**If validation fails:**
-1. Re-invoke the diagrammer with specific feedback:
-   ```
-   The diagram is incomplete. Issues found:
-   - {list: no arrows, missing sections, too few elements}
-   - Expected sections: {list from Step 2}
-   - Current element count: {N}, expected: 80+
-   Resume from Phase 1 and add the missing content. Do NOT use MCP tools as shortcuts.
-   ```
-2. Max 2 re-invocations. If still failing after 2 retries → report `status: failed` to user with what was attempted.
-
-#### Step 3 — Report to user
-
-Present:
-- Output file path (from diagrammer's status block)
-- Summary of what the diagram shows (from diagrammer's summary field)
-- If renderer was not set up, relay the setup instructions to the user:
-  ```bash
-  cd .claude/skills/excalidraw-diagram/references
-  uv sync
-  uv run playwright install chromium
-  ```
-
-### LikeC4 Diagram Mode — Detailed Flow
-
-When invoked with `Direct Mode Task: likec4-diagram`:
-
-#### Step 1 — Architect analyzes codebase context
-
-Invoke `architect` in **research mode** via Task tool with:
-- The diagram request (what to visualize)
-- Feature name for session-docs
-- Instruction: "Analyze the codebase/system to extract the components, relationships, data flows, and boundaries needed to create a LikeC4 architecture diagram. Focus on: entry points, services, databases, queues, external dependencies, and the actors who interact with the system. Produce a structured analysis in `session-docs/{feature}/00-research.md` — do NOT produce a diagram."
-
-The architect explores the codebase, reads relevant files, and writes a structured analysis to `session-docs/{feature}/00-research.md`.
-
-Gate: if `status: failed` → report to user and stop.
-
-#### Step 2 — Generate the `.c4` file
-
-You (orchestrator) generate the LikeC4 diagram directly, following the methodology in `.claude/skills/likec4-diagram/SKILL.md`. Read the skill files:
-1. `.claude/skills/likec4-diagram/SKILL.md` — generation process, quality checklist
-2. `.claude/skills/likec4-diagram/references/dsl-reference.md` — all DSL syntax
-3. `.claude/skills/likec4-diagram/references/patterns.md` — use the closest matching pattern as a starting point
-
-Using the architect's analysis from `session-docs/{feature}/00-research.md`, write the `.c4` file to `session-docs/{feature}/diagram.c4`.
-
-Build the file incrementally:
-1. **Pass 1:** Write the `specification` block with all element kinds, relationship kinds, colors, and tags
-2. **Pass 2:** Write the `model` block — top-level actors and systems first, then nested elements, then all relationships
-3. **Pass 3:** Write the `views` block — at minimum one landscape view and one detail view; add dynamic views for key flows
-
-#### Step 3 — Validate syntax
-
-Run:
-```bash
-npx likec4 validate
-```
-
-If errors are found, fix them and re-validate. Max 3 fix cycles. If still failing after 3 cycles, report `status: failed` with the last error output.
-
-#### Step 4 — Optional visual validation
-
-If `npx likec4` is available, export to PNG for visual inspection:
-```bash
-npx likec4 export png --output session-docs/{feature}/
-```
-
-Review the output. If key components are missing or relationships are unclear, revise the model and re-export.
-
-#### Step 5 — Quality gate
-
-Before reporting done, verify:
-1. `npx likec4 validate` passes with 0 errors
-2. Every element has a `description`
-3. Every relationship has a descriptive label (not blank)
-4. At least one landscape view and one detail view exist
-5. All major components from the architect's analysis are represented
-
-#### Step 6 — Write session doc and report to user
-
-Write `session-docs/{feature}/05-diagram.md`:
-```markdown
-# Diagram Summary: {feature}
-**Date:** {date}
-**Output:** session-docs/{feature}/diagram.c4
-
-## Design Decisions
-- **Pattern used:** {monolith/microservices/event-driven/layered/client-server/CQRS}
-- **Views created:** {list of view names and what they show}
-- **Element kinds defined:** {list}
-
-## Validation
-- CLI validate: {PASS/FAIL}
-- PNG export: {done/skipped}
-
-## What the Diagram Shows
-{2-3 sentences describing what the diagram communicates}
-```
-
-Present to user:
-- Output file path: `session-docs/{feature}/diagram.c4`
-- View names and what each shows
-- How to render: `npx likec4 start` (preview) or `npx likec4 export png` (export)
-- If CLI not installed: `npm install -g likec4` or use `npx likec4`
-
----
-
-### D2 Diagram Mode — Detailed Flow
-
-When invoked with `Direct Mode Task: d2-diagram`:
-
-#### Step 1 — Architect analyzes codebase context
-
-Invoke `architect` in **research mode** via Task tool with:
-- The diagram request (what to visualize)
-- Feature name for session-docs
-- Instruction: "Analyze the codebase/system to extract the components, relationships, data flows, and boundaries needed to create a D2 diagram. Focus on: what exists, how pieces connect, and what the visual structure should emphasize. Produce a structured analysis in `session-docs/{feature}/00-research.md` — do NOT produce a diagram."
-
-The architect explores the codebase, reads relevant files, and writes a structured analysis to `session-docs/{feature}/00-research.md`.
-
-Gate: if `status: failed` → report to user and stop.
-
-#### Step 2 — Read skill methodology
-
-Read these files before generating:
-1. `.claude/skills/d2-diagram/SKILL.md` — diagram type selection, generation process, quality checklist
-2. `.claude/skills/d2-diagram/references/dsl-reference.md` — all D2 syntax and shapes
-3. `.claude/skills/d2-diagram/references/patterns.md` — use the closest matching pattern as a starting point
-
-#### Step 3 — Generate the `.d2` file
-
-You (orchestrator) generate the D2 diagram directly, following the methodology in the skill. Using the architect's analysis from `session-docs/{feature}/00-research.md`:
-
-1. Determine diagram type (architecture / sequence / ER / class / flowchart) from the request
-2. Select the closest pattern from `references/patterns.md` as a starting point
-3. Write the `.d2` file to `session-docs/{feature}/diagram.d2`, building in passes:
-   - **Pass 1:** Header comment + `direction:` + `classes:` block (reusable styles)
-   - **Pass 2:** Top-level actors, containers, and external systems
-   - **Pass 3:** Internal nodes within containers
-   - **Pass 4:** All connections with labels; dashed style for async/event connections
-
-#### Step 4 — Validate and compile
-
-Format and validate syntax:
-```bash
-d2 fmt session-docs/{feature}/diagram.d2
-```
-
-Compile to SVG:
-```bash
-d2 session-docs/{feature}/diagram.d2 session-docs/{feature}/diagram.svg
-```
-
-If `d2 fmt` or compilation fails, read the error output (D2 errors point to exact line numbers), fix the issue in the `.d2` file, and retry. Max 3 fix cycles. If still failing after 3 cycles, report `status: failed` with the last error output.
-
-If `d2` is not installed (`d2 --version` fails), tell the user which install command to use (OS-specific — see skill CLI reference), report `status: blocked — d2 CLI not installed`, and stop.
-
-#### Step 5 — Quality gate
-
-Before reporting done, verify:
-1. `d2 fmt` passes with no error
-2. `d2 compile` produces an SVG file
-3. Every node has a meaningful label (not just its ID)
-4. Every connection has a label
-5. All major components from the architect's analysis are represented in the diagram
-
-#### Step 6 — Write session doc and report to user
-
-Write `session-docs/{feature}/05-diagram.md`:
-```markdown
-# D2 Diagram Summary: {feature}
-**Date:** {date}
-**Source:** session-docs/{feature}/diagram.d2
-**Output:** session-docs/{feature}/diagram.svg
-
-## Design Decisions
-- **Diagram type:** {architecture|sequence|ER|class|flowchart}
-- **Pattern used:** {microservices|monolith|event-driven|layered|client-server|CQRS|sequence|ER|flowchart}
-- **Layout engine:** {dagre (default)|elk}
-- **Node count:** {N top-level nodes/shapes}
-
-## Validation
-- d2 fmt: {PASS/FAIL}
-- SVG compile: {PASS/FAIL}
-
-## What the Diagram Shows
-{2-3 sentences describing what the diagram communicates}
-```
-
-Present to user:
-- Source file path: `session-docs/{feature}/diagram.d2`
-- SVG output path: `session-docs/{feature}/diagram.svg`
-- How to re-render with different themes: `d2 --theme 300 diagram.d2 dark.svg` (dark), `d2 --sketch diagram.d2 sketch.svg` (hand-drawn), `d2 --layout elk diagram.d2 elk.svg` (better edge routing)
-
----
-
-### Review Mode — Detailed Flow
-
-When invoked with `Direct Mode Task: review`:
-
-The `/review-pr` skill handles ALL Bash (fetching PR metadata, git diff, etc.) and passes everything inline. The orchestrator and reviewer do ZERO Bash.
-
-#### Step 1 — Receive pre-fetched data
-
-The skill already passed all data inline. Extract:
-- PR number, title, body, author, base/head branches, additions/deletions, URL
-- Linked issue (number, title, body, labels) or "none"
-- Changed files list
-- Full diff (may be truncated if >3000 lines)
-
-Zero Bash in this step.
-
-#### Step 2 — Invoke reviewer
-
-Invoke `reviewer` in **data-provided mode** via Task tool, passing ALL data inline:
-
-```
-mode: data-provided
-PR: #{number}
-Title: {title}
-Author: {author}
-Base: {base}
-Head: {head}
-Additions: +{N}
-Deletions: -{N}
-URL: {url}
-Body: {body}
-Linked Issue: #{issue_number} or "none"
-Issue Title: {title} or "N/A"
-Issue Body: {body} or "N/A"
-Issue Labels: {labels} or "N/A"
-Changed Files:
-{file list}
-Full Diff:
-{diff}
-```
-
-The reviewer operates in data-provided mode (zero Bash), analyzes the code, and returns a status block with `review_body` inline and `decision` (APPROVE or CHANGES_REQUESTED).
-
-#### Step 3 — Build draft
-
-Take the `review_body` from the reviewer's status block and write it to `.claude/pr-review-draft.md` using the Write tool.
-
-**Validation:** If the reviewer's status block does not contain `review_body` or it's empty, re-invoke the reviewer once with the same data. If it fails again, return `status: failed` to the skill with an explanation.
-
-**After writing the draft,** read `.claude/pr-review-draft.md` back to confirm it was written correctly and is not empty.
-
-Return to the skill with the decision:
-```
-Review draft written to .claude/pr-review-draft.md
-Decision: {APPROVE or CHANGES_REQUESTED}
-```
-
-The skill handles user approval and publishing — the orchestrator does NOT publish or ask the user.
+- **`orchestrator-modes.md`** — Diagram (Excalidraw), LikeC4 Diagram, D2 Diagram, Review mode
+- **`orchestrator-flows.md`** — Research, Spike, Plan, Parallel Dispatch, Hotfix, Security-Sensitive, Database Changes, Refactor, User-Initiated Simple mode
 
 ---
 

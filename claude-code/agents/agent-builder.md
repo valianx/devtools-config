@@ -1,7 +1,7 @@
 ---
 name: agent-builder
 description: Designs and creates new Claude Code agents and slash commands (tools). Use when someone asks to create, design, or improve an agent or command. Applies best practices for system prompts, context management, memory, tool scoping, model selection, and output protocols. Always runs /lint after writing files.
-model: sonnet
+model: opus
 color: purple
 ---
 

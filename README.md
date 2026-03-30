@@ -1,6 +1,6 @@
 # devtools-config
 
-Configuracion portable de mi entorno de desarrollo con IA. Un solo `git clone` + `setup.sh` restaura todo: un equipo de 11 agentes de IA especializados que colaboran para resolver issues, disenar arquitectura, escribir codigo, testear, y entregar PRs — todo coordinado automaticamente.
+Configuracion portable de mi entorno de desarrollo con IA. Un solo `git clone` + `setup.sh` restaura todo: un equipo de 13 agentes de IA especializados que colaboran para resolver issues, disenar arquitectura, escribir codigo, testear, y entregar PRs — todo coordinado automaticamente.
 
 ## Que hace esto?
 
@@ -30,9 +30,11 @@ Cada agente tiene un rol y restricciones claras. No es un solo prompt largo — 
 | **reviewer** | Revisa PRs con comentarios detallados |
 | **init** | Bootstrap de CLAUDE.md en repos nuevos |
 | **diagrammer** | Genera diagramas Excalidraw con render-validate loop |
+| **likec4-diagrammer** | Genera diagramas LikeC4 (architecture-as-code) |
+| **d2-diagrammer** | Genera diagramas D2 (flowcharts, sequence, ER, architecture) |
 | **agent-builder** | Crea y mejora agentes y skills del sistema |
 
-### Comandos disponibles (20 slash commands)
+### Comandos disponibles (22 slash commands)
 
 Dentro de Claude Code, escribes `/comando` y el sistema hace el resto:
 
@@ -48,6 +50,8 @@ Dentro de Claude Code, escribes `/comando` y el sistema hace el resto:
 /security <feature>     Auditoria de seguridad completa
 /review-pr <#N>         Review de PR con aprobacion interactiva
 /diagram <descripcion>  Diagrama Excalidraw (analisis + generacion)
+/likec4-diagram <desc>  Diagrama LikeC4 (architecture-as-code)
+/d2-diagram <desc>      Diagrama D2 (flowcharts, sequence, ER, architecture)
 /init                   Bootstrap de CLAUDE.md en el repo actual
 /spike <descripcion>    Exploracion rapida sin pipeline completo
 /audit [target]         Health check de arquitectura
@@ -86,8 +90,8 @@ En Windows con WSL, configura ambos entornos automaticamente (incluyendo ChromaD
 ```
 devtools-config/
 ├── claude-code/              # Configuracion de Claude Code
-│   ├── agents/               #   System prompts de los 11 agentes
-│   ├── skills/               #   20 slash commands + excalidraw skill
+│   ├── agents/               #   System prompts de los 13 agentes
+│   ├── skills/               #   22 slash commands + diagram skills
 │   ├── hooks/                #   Scripts de integracion con OpenClaw
 │   └── settings.json         #   Respaldo de settings globales
 │
@@ -123,6 +127,18 @@ Cuando ejecutas `/issue`, el orchestrator coordina este flujo:
 ```
 
 Los agentes se comunican via archivos en `session-docs/` (un tablero compartido). Cada tarea tiene su carpeta con specs, diseno, reporte de tests, validacion, y delivery.
+
+### Ejecucion paralela de tareas
+
+Cuando `/plan-and-execute` produce multiples tareas independientes, el sistema las ejecuta en paralelo usando git worktrees:
+
+```
+Round 1:  [Task 1: fundacional]                    ← secuencial
+Round 2:  [Task 2: depende de 1]                   ← secuencial
+Round 3:  [Task 3] [Task 4] [Task 5]               ← PARALELO (worktrees + tmux)
+```
+
+Cada tarea paralela corre en su propia instancia de Claude Code (`claude --worktree --tmux`), con su propio branch y session-docs.
 
 ## Memoria persistente
 

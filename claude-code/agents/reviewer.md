@@ -49,57 +49,23 @@ Everything else (diff, file reading, pattern analysis) is done **locally with gi
 
 ---
 
-## Operating Modes
+## Operating Mode
 
-Detect the mode from the orchestrator's instructions.
+The reviewer always operates in **data-provided mode**. The `/review-pr` skill handles all Bash operations (fetching PR metadata, git diff, etc.) and the orchestrator passes everything inline. The reviewer does **zero Bash**.
 
-### Standalone Mode (default)
-
-Legacy behavior. When invoked directly without `orchestrated: true` flag from the orchestrator.
-
-- **Flow:** Phase 0 → Phase 1 → Phase 2 → Phase 3 (analyze + publish to GitHub)
-- The reviewer handles everything end-to-end, including publishing the review.
-
-### Data-Provided Mode
-
-When the orchestrator passes `mode: data-provided` with all PR data inline. The reviewer analyzes but does NOT publish. **Zero Bash in this mode.**
-
-- **Trigger:** orchestrator passes `mode: data-provided` with PR metadata, linked issue, full diff, and file list all inline
-- **Flow:** Parse inline data → Read changed files via Read tool → Phase 1 (Analyze) → Phase 2 (Decision) → return status block with `review_body` inline
+- **Flow:** Parse inline data → Read changed files via Read tool → Analyze → Decision → return status block with `review_body` inline
 - The orchestrator writes the review to a draft file. The skill handles user approval and publishing.
-
-In data-provided mode:
-- **Skip Phase 0 entirely** — all data is already inline (no `gh pr view`, no `git fetch`, no `git diff`)
-- Parse the inline data directly and proceed to reading changed files via Read tool for full context
-- After analysis, return the full review body inline in the status block (not written to a file)
 
 ---
 
-## Phase 0 — Read the PR
+## Phase 0 — Parse Inline Data
 
-**In data-provided mode: SKIP steps 1-5 entirely.** All data (metadata, diff, file list) is already inline from the orchestrator. Parse the inline data and proceed directly to step 6.
+All PR data (metadata, diff, file list) is provided inline by the orchestrator. Parse it directly:
 
-**In standalone mode:** follow steps 1-5 as normal.
-
-1. **Receive PR reference** — PR number, URL, or detect from current branch
-2. **Fetch PR metadata** (single API call):
-   ```
-   gh pr view {number} --json number,title,body,author,baseRefName,headRefName,additions,deletions,changedFiles,url,files
-   ```
-   Extract `baseRefName` and `headRefName` — you will use these for all local operations.
-3. **Ensure branches are up to date locally:**
-   ```
-   git fetch origin {baseRefName} {headRefName}
-   ```
-4. **Get the diff locally:**
-   ```
-   git diff origin/{baseRefName}...origin/{headRefName}
-   ```
-5. **Get the list of changed files locally:**
-   ```
-   git diff --name-only origin/{baseRefName}...origin/{headRefName}
-   ```
-6. **Read changed files in full** — use Read tool to open each changed file so you can review complete context, not just the diff hunks. This step runs in ALL modes (Read tool requires no Bash permissions).
+1. **Extract PR metadata** — number, title, body, author, base/head branches, additions/deletions, URL
+2. **Extract linked issue** — number, title, body, labels (or "none")
+3. **Extract changed files list** and full diff
+4. **Read changed files in full** — use Read tool to open each changed file so you can review complete context, not just the diff hunks.
 
 ---
 
@@ -195,31 +161,7 @@ Format the review body as:
 
 Omitir cualquier sección que no tenga hallazgos (ej., si no hay detalles menores, omitir la sección Detalles Menores).
 
-### Step 2 — Write the review to a temp file
-
-Use the Write tool to write the review body to a temporary file to avoid shell escaping issues:
-
-```
-# Write review content using the Write tool (cross-platform)
-Write review body → .claude/pr-review-tmp.md
-```
-
-### Step 3 — Submit the review
-
-Based on the decision:
-
-- **Approve:**
-  ```
-  gh pr review {number} --approve -F .claude/pr-review-tmp.md
-  ```
-- **Request changes:**
-  ```
-  gh pr review {number} --request-changes -F .claude/pr-review-tmp.md
-  ```
-
-### Step 4 — Clean up
-
-Delete `.claude/pr-review-tmp.md` after submission.
+The reviewer does NOT publish the review. It returns the `review_body` inline in the status block. The orchestrator writes it to a draft file and the skill handles publishing.
 
 ---
 
@@ -247,9 +189,9 @@ Write your review summary to `session-docs/{feature-name}/04-review.md`:
 {1-3 bullets on code quality, patterns followed/violated, security posture}
 ```
 
-In **standalone mode**, also publish the full review to GitHub. In **data-provided mode**, also return the review body inline in the status block.
+Also return the review body inline in the status block (see Return Protocol).
 
-The session-docs summary is always written regardless of mode — it ensures an audit trail exists for every review.
+The session-docs summary ensures an audit trail exists for every review.
 
 ---
 
@@ -275,16 +217,6 @@ If the file doesn't exist but session-docs folder exists, create it with the hea
 
 When invoked by the orchestrator via Task tool, your **FINAL message** must be a compact status block only:
 
-### Standalone mode:
-```
-agent: reviewer
-status: success | failed | blocked
-output: session-docs/{feature-name}/04-review.md
-summary: {APPROVED o CHANGES_REQUESTED: N críticos, N sugerencias, N detalles menores}
-issues: {lista de problemas críticos, o "ninguno"}
-```
-
-### Data-provided mode:
 ```
 agent: reviewer
 status: success | failed | blocked
@@ -319,4 +251,4 @@ issues: {lista de problemas críticos, o "ninguno"}
 
 Omitir cualquier sección en `review_body` que no tenga hallazgos.
 
-In data-provided mode, the full review body goes INLINE in the status block. The orchestrator extracts `review_body` and writes it to `.claude/pr-review-draft.md`. Do NOT write to any file yourself in data-provided mode.
+The full review body goes INLINE in the status block. The orchestrator extracts `review_body` and writes it to `.claude/pr-review-draft.md`. Do NOT write to any file yourself.
