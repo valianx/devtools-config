@@ -596,6 +596,12 @@ Using dispatch labels and the dependency graph:
 
 ### Step 4 — Execute a round
 
+**Concurrency cap: max 5 concurrent agents.** Never launch more than 5 worktrees simultaneously. If a round has more tasks than the cap, split the round into **waves**:
+- Wave 1: first 5 tasks → launch and wait for results
+- Wave 2: next 5 tasks → launch when a slot frees up (a task from wave 1 completes)
+- Continue until all tasks in the round are done
+- Slot-filling is eager: as soon as one agent completes, launch the next queued task immediately (don't wait for the full wave to finish)
+
 **If 1 task in round:** run it in the current session (normal full pipeline). Update `batch-progress.md` and proceed to next round.
 
 **If 2+ tasks in round:**
@@ -606,7 +612,9 @@ Using dispatch labels and the dependency graph:
 
 #### 4b. Launch parallel instances with completion hooks
 
-For each task in the round, launch a worktree with a `Stop` hook that writes the result to a shared directory:
+Determine how many tasks to launch: `launch_count = min(tasks_in_round, 5)`. Queue the rest.
+
+For each task being launched, spawn a worktree with a `Stop` hook that writes the result to a shared directory:
 
 ```bash
 claude --worktree {task-name} --tmux --dangerously-skip-permissions \
@@ -614,13 +622,15 @@ claude --worktree {task-name} --tmux --dangerously-skip-permissions \
   -p "/issue #{number}"
 ```
 
-Update `batch-progress.md`: mark each launched task as `RUNNING`.
+Update `batch-progress.md`: mark launched tasks as `RUNNING`, remaining as `QUEUED`.
 
 Report to user:
 ```
-⚡ Round {N}: launched {count} tasks in parallel
+⚡ Round {N}: {total} tasks ({launch_count} launched, {queued} queued — max 5 concurrent)
+   Running:
    - {task-1} (worktree: {name})
    - {task-2} (worktree: {name})
+   Queued: {task-6}, {task-7}, ...
    Waiting for results...
 ```
 
@@ -639,10 +649,11 @@ inotifywait -q -e create --format '%f' /tmp/batch-results/ 2>/dev/null || \
 
 1. Read the `.done` file to get the pipeline result (phase, status, summary)
 2. Update `batch-progress.md` with the result
-3. Report to user:
+3. **If queued tasks remain AND running count < 5** → launch the next queued task immediately (eager slot-filling). Mark it as `RUNNING` in `batch-progress.md`.
+4. Report to user:
    ```
    ✓ Task {name} completed — {summary from 00-state.md}
-     {N}/{total} tasks in round done
+     {N}/{total} tasks in round done | Running: {count} | Queued: {count}
    ```
    Or if failed:
    ```
@@ -653,8 +664,8 @@ inotifywait -q -e create --format '%f' /tmp/batch-results/ 2>/dev/null || \
      3. Skip and continue
      4. Abort batch
    ```
-4. If all tasks in the round are done → proceed to next round (Step 4)
-5. If tasks remain → loop back to wait
+5. If all tasks in the round are done → proceed to next round (Step 4)
+6. If tasks remain → loop back to wait
 
 #### 4d. Verify with tmux (if result file is missing)
 
