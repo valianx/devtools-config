@@ -72,12 +72,18 @@ Two modes: `plan` (analysis only) and `plan-and-execute` (analysis + full pipeli
 
 ---
 
-## Parallel Dispatch Flow (plan-and-execute with multiple tasks)
+## Parallel Dispatch Flow (DEFAULT for 2+ tasks)
 
-Parallel dispatch is defined in the orchestrator's **Multi-Task Orchestration** section. This reference only covers the `plan-and-execute` entry point.
+Parallel dispatch is defined in the orchestrator's **Multi-Task Orchestration** section. It is the **default behavior** whenever the orchestrator has 2+ tasks, regardless of entry point.
 
-When `plan-and-execute` produces multiple tasks:
-1. The orchestrator reads `01-planning.md` for dependency info
+**Entry points that lead here:**
+- `/plan plan-and-execute` → architect produces task breakdown → dispatch
+- `/issue #1 #2 #3` → multiple issues → dispatch
+- User requests batch/parallel work → orchestrator runs Specify + Design (planning mode) → dispatch
+- Orchestrator identifies broad scope needing breakdown → auto plan-and-execute → dispatch
+
+When multiple tasks exist:
+1. The orchestrator reads `01-planning.md` for dependency info (if available) or analyzes dependencies itself
 2. Follows the **Multi-Task Orchestration** flow (dependency analysis → rounds → hooks + inotifywait → event-driven monitoring)
 3. Each worktree runs a full pipeline via `/issue #{number}`
 

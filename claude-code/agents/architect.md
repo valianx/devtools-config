@@ -117,14 +117,31 @@ Used when the team needs to analyze a problem and produce a task breakdown — i
 
 #### Task Sizing Rules
 
-Each task in the breakdown must be **small enough to implement in one focused session** — the equivalent of ~3 hours of human work, max 1 day. This is critical for quality and reviewability.
+Each task must be **small enough to complete in one agent pipeline run** (specify → design → implement → test → validate → deliver). Use the **agent-time** sizing below — never estimate in human time.
+
+**Agent-Time Sizing (calibrated to autonomous multi-agent pipeline):**
+
+| Size | Agent Pipeline Time | Scope | Max AC |
+|------|-------------------|-------|--------|
+| **XS** | 10-20 min | Config change, single-file fix, simple CRUD endpoint | 2-3 |
+| **S** | 20-45 min | Single feature (1-3 files), straightforward bug fix, utility module | 3-4 |
+| **M** | 45-90 min | Multi-file feature, moderate refactor, new service with tests | 4-5 |
+| **L** | 90 min - 3 hrs | Cross-module feature, significant refactor, integration with external API | 5-7 |
+
+**No task should be larger than L.** If you estimate >3 hours agent-time or >7 AC, split it.
+
+**Estimation rules:**
+- Estimate in **agent-time** (wall-clock for the autonomous pipeline), NOT human-time
+- An agent pipeline completes a full cycle (specify → deliver) in the times above
+- With parallel dispatch, independent tasks in the same round run concurrently — total batch time ≈ longest round, not sum of all tasks
+- A project that a human team estimates at weeks/months typically completes in **4-12 hours** of agent batch execution
 
 **A task is too big if:**
 - It would need its own architecture proposal to implement (split it)
 - It touches more than 3-4 unrelated areas of the codebase (split by area)
-- It has more than 5 acceptance criteria (split by behavior)
+- It has more than 7 acceptance criteria (split by behavior)
 - It describes a full feature end-to-end (e.g., "implement login") — decompose into layers/steps
-- You can't describe what "done" looks like in 2-3 sentences
+- Agent-time estimate exceeds 3 hours
 
 **A task is too small if:** single line change with no meaningful AC, or exists only as a dependency with no standalone value.
 
@@ -144,7 +161,7 @@ Each task in the breakdown must be **small enough to implement in one focused se
    - Acceptance criteria in Given/When/Then format (max 20 per task — if more, the task is too large and must be split)
    - Files and components affected
    - Architecture guidance (brief — what pattern to follow, what interfaces to respect)
-   - Estimated complexity (`simple` / `standard` / `complex`)
+   - **Size** (`XS` / `S` / `M` / `L`) with **agent-time estimate** (see Agent-Time Sizing table)
    - Dependencies on other tasks in the breakdown
    - **Blocks** (which other tasks depend on this one — inverse of Dependencies)
 
@@ -189,7 +206,7 @@ Write to `session-docs/{feature-name}/01-planning.md`:
 #### Task 1: {imperative title}
 - **Label:** {feature/fix/refactor/enhancement}
 - **Dispatch:** {BLOCKER/PARALLEL/CONVERGENCE/SEQUENTIAL}
-- **Complexity:** {simple/standard/complex}
+- **Size:** {XS/S/M/L} — **Agent-time:** {estimated minutes/hours}
 - **Group:** {group name}
 - **Dependencies:** {none | Task N}
 - **Blocks:** {Task M, Task P | none}
@@ -206,25 +223,27 @@ Write to `session-docs/{feature-name}/01-planning.md`:
 (Repeat groups as needed. Each group represents a logical area of work.)
 
 ## Dispatch Map
-| Task | Dispatch | Dependencies | Blocks | Round |
-|------|----------|-------------|--------|-------|
-| 1. {title} | BLOCKER | none | 2, 3 | 1 |
-| 2. {title} | SEQUENTIAL | 1 | 4, 5 | 2 |
-| 3. {title} | PARALLEL | 1 | none | 2 |
-| 4. {title} | PARALLEL | 2 | none | 3 |
-| 5. {title} | CONVERGENCE | 2, 3 | none | 3 |
+| Task | Dispatch | Size | Agent-Time | Dependencies | Blocks | Round |
+|------|----------|------|-----------|-------------|--------|-------|
+| 1. {title} | BLOCKER | M | ~60 min | none | 2, 3 | 1 |
+| 2. {title} | SEQUENTIAL | S | ~30 min | 1 | 4, 5 | 2 |
+| 3. {title} | PARALLEL | S | ~25 min | 1 | none | 2 |
+| 4. {title} | PARALLEL | XS | ~15 min | 2 | none | 3 |
+| 5. {title} | CONVERGENCE | M | ~45 min | 2, 3 | none | 3 |
 
 **Execution plan:**
-- Round 1: {BLOCKER tasks} — resolve these first
-- Round 2: {PARALLEL + SEQUENTIAL tasks whose deps are in Round 1}
-- Round 3: {CONVERGENCE + remaining tasks}
+- Round 1: {tasks} — ~{time of longest task in round}
+- Round 2: {tasks} — ~{time of longest task in round} (parallel)
+- Round 3: {tasks} — ~{time of longest task in round} (parallel)
+- **Estimated total batch time: ~{sum of round times}** (rounds are sequential, tasks within rounds are parallel)
 
 ## Summary
-| Group | Tasks | Simple | Standard | Complex |
-|-------|-------|--------|----------|---------|
-| {group} | {count} | {count} | {count} | {count} |
-| **Total** | **{N}** | | | |
+| Group | Tasks | XS | S | M | L |
+|-------|-------|----|---|---|---|
+| {group} | {count} | {count} | {count} | {count} | {count} |
+| **Total** | **{N}** | | | | |
 | **Dispatch** | BLOCKER: {N} | PARALLEL: {N} | CONVERGENCE: {N} | SEQUENTIAL: {N} |
+| **Agent-time** | Sum: {total} | Per round: {longest per round} | **Batch wall-clock: ~{estimated}** | |
 
 ## Risks & Considerations
 - {risk or cross-cutting concern}

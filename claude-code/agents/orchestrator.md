@@ -188,7 +188,15 @@ Every task runs the COMPLETE pipeline: Specify → Design → Implement → Veri
    - Verify these prerequisites exist: `CLAUDE.md`, `CHANGELOG.md`, `.gitignore` with `/session-docs` entry
    - If ANY is missing → invoke `init` agent via Task tool before continuing
    - If all exist → proceed normally
-8. **If multiple tasks were received** (batch from `/issue`), jump to **Multi-Task Orchestration** section.
+8. **Multi-task detection (MANDATORY)** — evaluate whether this work involves multiple tasks. Jump to **Multi-Task Orchestration** if ANY of these is true:
+   - Multiple issues were received (batch from `/issue`)
+   - User explicitly requests batch, parallel, or multi-task execution
+   - The task description clearly decomposes into 2+ independent deliverables
+   - User asks to "investigate/research and then implement" a broad scope that will need breakdown
+   
+   **When in doubt, plan first:** If the scope seems large or the user mentions "batch"/"parallel"/"multiple tasks", run Phase 0b (Specify) → Phase 1 (Design in planning mode) to produce a task breakdown in `01-planning.md`, then jump to **Multi-Task Orchestration** with the resulting tasks. This is the `plan-and-execute` flow — you do NOT need `/plan` to trigger it.
+   
+   **Rule: Parallel dispatch is the DEFAULT for 2+ tasks.** You never run multiple tasks sequentially in a single session. If you have multiple tasks, you ALWAYS use Multi-Task Orchestration (worktrees + tmux). The only exception is a round with exactly 1 task (optimization: run in current session).
 9. **If type is `spike`**, jump to **Spike Flow** in Special Flows section.
 10. **Announce** to the user: task classified, proceeding to SPECIFY.
 
@@ -527,7 +535,13 @@ Using the ChromaDB MCP tools (if available), save the most reusable insights as 
 
 ## Multi-Task Orchestration
 
-When multiple tasks are received (batch from `/issue` or `/plan`), dispatch them using dependency analysis, parallel worktrees, and event-driven monitoring via hooks.
+**DEFAULT behavior for 2+ tasks.** Whenever you have multiple tasks — from `/issue` batch, `/plan plan-and-execute`, user request for batch work, or your own breakdown of a broad scope — dispatch them using dependency analysis, parallel worktrees, and event-driven monitoring via hooks. You NEVER run multiple tasks sequentially in a single session.
+
+**How you get here:**
+- `/issue #1 #2 #3` → multiple issues received → jump here from Phase 0a Step 8
+- `/plan plan-and-execute` → architect produces task breakdown → jump here after planning
+- User says "investigate and implement" / "batch" / "parallel" / broad scope → you run Specify + Design (planning mode) to produce tasks → jump here with the resulting task list
+- Any other scenario where you identify 2+ deliverables → jump here
 
 **Architecture:** The dispatcher (you) stays alive throughout the batch. Worktrees notify completion via hooks. You react only when a result arrives — zero cost during wait.
 
@@ -716,7 +730,7 @@ All special flows are detailed in `ref-special-flows.md`. Read it on-demand when
 | Research | `type: research` | Architect only (research mode) → skip Phases 2-5 |
 | Spike | `type: spike` | Implementer only (no design, no tests) → ask user: formalize/discard/investigate |
 | Plan | `/plan` | Architect (planning mode) → create issues → STOP |
-| Plan-and-execute | `/plan-and-execute` | Plan + dispatch tasks via Parallel Dispatch (worktrees + tmux) |
+| Plan-and-execute | `/plan-and-execute` or auto-detected broad scope | Plan + dispatch tasks via Parallel Dispatch (worktrees + tmux) |
 | Refactor | `type: refactor` | Existing tests are the contract, ACs use VERIFY format |
 | Simple (user-only) | User says "simple"/"skip design" | Skip requested phases only, never auto-classify |
 
