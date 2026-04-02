@@ -235,7 +235,7 @@ Test-Pipeline Task:
 - Module path: {path to module directory}
 - Service path: {service root}
 - Stack: {detected framework}
-- Coverage target: contribute to 80% service-wide branch coverage
+- Coverage target: aim for >= 85% branch coverage per module (overshot intentionally --- the service-wide gate is 80% and rounding/overlap means per-module must exceed 80% to guarantee the aggregate passes)
 - Skip security: {true/false from --skip-security flag}
 - Instruction:
   1. TESTER PHASE: Write comprehensive tests for all files in {module path}.
@@ -279,43 +279,57 @@ When Phase 3 sends tasks back:
 
 **Owner:** Orchestrator
 
-**The 80% branch coverage gate is non-negotiable.**
+**⚠️ THE 80% BRANCH COVERAGE GATE IS NON-NEGOTIABLE. 79.99% IS A FAILURE. THERE IS NO "CLOSE ENOUGH".**
+
+**Rules:**
+- 78.99% = FAIL → iterate
+- 79.5% = FAIL → iterate
+- 79.99% = FAIL → iterate
+- 80.00% = PASS
+- Do NOT proceed to Phase 4 unless coverage >= 80% OR max iterations (3) exhausted
+- Do NOT rationalize that "it's close enough" — the gate is binary: >= 80% or iterate
 
 1. **Collect results** --- read all `session-docs/test-pipeline-{module}/03-testing.md` files. Extract: module name, tests created, tests passing, branch coverage %, security findings.
 
-2. **Run coverage service-wide** --- execute the project's coverage command across the ENTIRE test suite:
+2. **Run coverage service-wide** --- execute the project's test coverage command across the ENTIRE test suite:
    ```bash
-   # Example for Jest/Vitest:
+   # For Jest:
+   npx jest --coverage --coverageReporters=json-summary
+   # For Vitest:
    npx vitest run --coverage --reporter=json
-   # Or equivalent for the detected framework
+   # Read the JSON summary to get the exact branch coverage percentage
    ```
-   This produces the authoritative service-wide coverage number. Per-module numbers may overlap or miss integration coverage.
+   **CRITICAL:** Read the actual coverage output. Parse the branch coverage number. Compare it numerically against 80. Do NOT eyeball it or approximate.
 
-3. **Evaluate gate:**
+3. **Evaluate gate (STRICTLY):**
 
    | Condition | Action |
    |-----------|--------|
-   | >= 80% branch coverage | PASS --- proceed to Phase 4 |
-   | < 80% AND iteration < 3 | Gap Analysis → re-launch Phase 2 (gaps only) |
-   | < 80% AND iteration = 3 | BLOCKED --- proceed to Phase 4 with BLOCKED status |
+   | branch coverage >= 80.00% | PASS --- proceed to Phase 4 |
+   | branch coverage < 80.00% AND iteration < 3 | FAIL --- Gap Analysis → re-launch Phase 2 |
+   | branch coverage < 80.00% AND iteration = 3 | BLOCKED --- proceed to Phase 4 with BLOCKED status, report to user that manual intervention is needed |
 
-4. **Gap Analysis** (only if < 80%):
-   a. Parse the coverage report to identify files/functions with uncovered branches
+   **There is no fourth option. "Close to 80%" is not a pass.**
+
+4. **Gap Analysis** (MANDATORY when < 80%):
+   a. Parse the coverage report (JSON summary or detailed report) to identify EXACTLY which files have uncovered branches
    b. Group uncovered branches by module
-   c. Prioritize by impact (more uncovered branches = higher priority)
-   d. Generate new tasks ONLY for modules with gaps, including specific context:
-      - Which files need more tests
-      - Which branches/functions are uncovered
-      - What kind of tests are likely needed (error paths, edge cases, etc.)
-   e. Update `batch-progress.md` with new gap tasks
-   f. Increment iteration counter in `00-state.md`
-   g. Return to Phase 2 with gap-specific tasks
+   c. Prioritize: files with most uncovered branches first, focus on files where small effort yields biggest coverage gain
+   d. Calculate how many more branches need coverage to cross 80%: `needed = (0.80 * total_branches) - covered_branches`
+   e. Generate new tasks ONLY for modules with gaps, including specific context:
+      - Which files need more tests (with exact uncovered branch counts)
+      - Which functions/methods have uncovered branches
+      - What kind of tests are likely needed (error paths, edge cases, early returns, null checks)
+   f. Update `batch-progress.md` with new gap tasks
+   g. Increment iteration counter in `00-state.md`
+   h. Report to user: "Coverage at {N}%, need {M} more branches covered. Iterating ({iter}/3)."
+   i. Return to Phase 2 with gap-specific tasks
 
 5. **Report to user:**
    ```
    Coverage Gate: {N}% branches (target: 80%)
-   Status: PASS | ITERATING ({N}/3) | BLOCKED
-   Modules with gaps: {list or "none"}
+   Status: PASS | ITERATING ({N}/3) — need {M} more branches | BLOCKED
+   Modules with gaps: {list with uncovered branch counts}
    ```
 
 ### Phase 4 --- Consolidation & Report

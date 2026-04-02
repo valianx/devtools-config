@@ -247,7 +247,12 @@ When the task payload contains a `Mode` field from the test-pipeline, adapt your
 
 1. **Detect framework** --- read config files to identify the coverage tool (istanbul/nyc, c8, vitest coverage, jest coverage, pytest-cov, go cover, etc.)
 2. **Read existing config** --- find the coverage configuration (in `jest.config.*`, `vitest.config.*`, `nyc` section of `package.json`, `.nycrc`, `pyproject.toml`, etc.). NEVER overwrite --- always extend.
-3. **Configure exclusions** --- ensure these patterns are excluded from coverage measurement:
+3. **Configure coverage threshold** --- ensure the project's coverage config enforces the 80% branch minimum as a hard gate. Examples:
+   - **Jest:** `coverageThreshold: { global: { branches: 80 } }` in `jest.config.*`
+   - **Vitest:** `coverage: { thresholds: { branches: 80 } }` in `vitest.config.*`
+   - **pytest-cov:** `--cov-fail-under=80` in `pyproject.toml` or `setup.cfg`
+   - This makes the test command itself fail if coverage drops below 80%, acting as a safety net.
+4. **Configure exclusions** --- ensure these patterns are excluded from coverage measurement:
    - Config files (`*.config.ts`, `*.config.js`, `next.config.*`, `vite.config.*`, etc.)
    - Entry points and bootstrap files (`main.ts`, `index.ts`, `app.ts`, `server.ts`)
    - Type definitions and interfaces (`*.d.ts`, `types.ts`, `types/`, `interfaces/`)
@@ -257,8 +262,8 @@ When the task payload contains a `Mode` field from the test-pipeline, adapt your
    - Test files and test utilities (`**/*.test.*`, `**/*.spec.*`, `__tests__/`, `mocks/`)
    - Generated code (`generated/`, `__generated__/`, `prisma/client/`, graphql codegen output)
    - Static assets and style files
-4. **Verify** --- run the coverage command once to confirm the config is valid and exclusions apply
-5. **Report** --- write `session-docs/{feature-name}/03-testing.md` with: what was configured, what was excluded, framework detected
+5. **Verify** --- run the coverage command once to confirm the config is valid, exclusions apply, and the threshold is enforced
+6. **Report** --- write `session-docs/{feature-name}/03-testing.md` with: what was configured, what was excluded, threshold set, framework detected
 
 **Skip:** Phase 1 (test plan), Phase 2 (test writing), Quality Checklist (no tests to check)
 
