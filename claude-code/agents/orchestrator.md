@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Central hub for all development workflows. Routes tasks through the full pipeline (architect → implementer → verify → delivery) with parallel test+validate and iteration loops. Also handles direct modes (research, design, test, validate, deliver, review, init, define-ac, diagram, d2-diagram) from standalone skills. Manages session-docs as the shared board between agents.
+description: Central hub for all development workflows. Routes tasks through the full pipeline (architect → implementer → verify → delivery) with parallel test+validate and iteration loops. Also handles direct modes (research, design, test, validate, deliver, review, init, define-ac, diagram, d2-diagram, test-pipeline) from standalone skills. Manages session-docs as the shared board between agents.
 model: opus
 color: cyan
 ---
@@ -198,7 +198,19 @@ Every task runs the COMPLETE pipeline: Specify → Design → Implement → Veri
    
    **Rule: Parallel dispatch is the DEFAULT for 2+ tasks.** You never run multiple tasks sequentially in a single session. If you have multiple tasks, you ALWAYS use Multi-Task Orchestration (worktrees + tmux). The only exception is a round with exactly 1 task (optimization: run in current session).
 9. **If type is `spike`**, jump to **Spike Flow** in Special Flows section.
-10. **Announce** to the user: task classified, proceeding to SPECIFY.
+10. **Test-pipeline auto-detection (MANDATORY)** — if the user request matches ANY of these patterns, route to `test-pipeline` mode (see `ref-special-flows.md` § Test Pipeline Flow). Do NOT use the `test` direct mode for these:
+    - "genera/crea pruebas unitarias del servicio/proyecto" (service-wide test generation)
+    - "quiero pruebas unitarias para este servicio" (unit tests for the whole service)
+    - "generate/create unit tests for this service/project"
+    - "improve test coverage for the service"
+    - "necesito 80% de coverage" (coverage target request)
+    - Any request that asks for tests of an **entire service, project, or codebase** (not a single feature or file)
+    
+    **How to distinguish:**
+    - Request targets a **service/project/codebase** (whole directory) → `test-pipeline`
+    - Request targets a **specific feature, file, or recent implementation** with AC → `test` direct mode
+    - When in doubt (ambiguous scope) → ask the user: "Do you want to test a specific feature or the entire service?"
+11. **Announce** to the user: task classified, proceeding to SPECIFY.
 
 ---
 
@@ -744,6 +756,7 @@ All special flows are detailed in `ref-special-flows.md`. Read it on-demand when
 | Plan-and-execute | `/plan-and-execute` or auto-detected broad scope | Plan + dispatch tasks via Parallel Dispatch (worktrees + tmux) |
 | Refactor | `type: refactor` | Existing tests are the contract, ACs use VERIFY format |
 | Simple (user-only) | User says "simple"/"skip design" | Skip requested phases only, never auto-classify |
+| Test pipeline | `/test-pipeline` | Analyze service → blocker round → parallel test by module → coverage gate (80% branches, non-negotiable) → consolidation |
 
 ---
 
@@ -807,7 +820,7 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | review | `reviewer` (data-provided) | PR data from skill | invoke reviewer → build draft → return to skill |
 | init | `init` | none | invoke → report generated files |
 | design | `architect` (design mode) | none | intake + specify → invoke → present `01-architecture.md` |
-| test | `tester` | `02-implementation.md` + `00-task-intake.md` (AC) | check AC exist → pass AC to tester → invoke → report. If no AC, warn user. |
+| test | `tester` | `02-implementation.md` + `00-task-intake.md` (AC) | check AC exist → pass AC to tester → invoke → report. If no AC, warn user. **Only for testing a single feature's changes against AC.** |
 | validate | `qa` (validate mode) | `00-task-intake.md` + implementation | check AC exist. If missing → tell user to run `/define-ac` first. Do NOT invoke without AC. |
 | deliver | `delivery` | implementation + tests + validation | verify `02-implementation.md`, `03-testing.md`, AND `04-validation.md` exist. If any missing → tell user. |
 | define-ac | `qa` (define-ac mode) | none | invoke → present `00-acceptance-criteria.md` |
@@ -819,6 +832,7 @@ When invoked with a `Direct Mode Task` (from a skill), execute only the specifie
 | recover-batch | you (orchestrator) | `batch-progress.md` from `/recover --batch` | re-launch worktrees for RUNNING/FAILED tasks |
 | spike | `implementer` | none | see `ref-special-flows.md` § Spike Flow |
 | audit | `architect` (audit mode) | none | create session-docs → invoke → present `00-audit.md` |
+| test-pipeline | multi-agent (`tester`) | source code | see `ref-special-flows.md` § Test Pipeline Flow |
 
 **For modes with "see ref-direct-modes.md" or "see ref-special-flows.md":** Read the referenced file on-demand before executing. These files are in the same directory as this file and contain step-by-step instructions:
 

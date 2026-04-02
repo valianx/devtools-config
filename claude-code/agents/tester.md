@@ -237,6 +237,134 @@ Before finishing:
 
 ---
 
+## Test-Pipeline Modes
+
+When the task payload contains a `Mode` field from the test-pipeline, adapt your behavior as follows. These modes are mutually exclusive with the standard AC-driven flow.
+
+### Mode: `coverage-config`
+
+**Purpose:** Configure coverage exclusions only. Do NOT write any tests.
+
+1. **Detect framework** --- read config files to identify the coverage tool (istanbul/nyc, c8, vitest coverage, jest coverage, pytest-cov, go cover, etc.)
+2. **Read existing config** --- find the coverage configuration (in `jest.config.*`, `vitest.config.*`, `nyc` section of `package.json`, `.nycrc`, `pyproject.toml`, etc.). NEVER overwrite --- always extend.
+3. **Configure exclusions** --- ensure these patterns are excluded from coverage measurement:
+   - Config files (`*.config.ts`, `*.config.js`, `next.config.*`, `vite.config.*`, etc.)
+   - Entry points and bootstrap files (`main.ts`, `index.ts`, `app.ts`, `server.ts`)
+   - Type definitions and interfaces (`*.d.ts`, `types.ts`, `types/`, `interfaces/`)
+   - Constants and enums (pure declaration files)
+   - Barrel exports (`index.ts` that only re-export)
+   - Migration files (`migrations/`, `**/migration*`)
+   - Test files and test utilities (`**/*.test.*`, `**/*.spec.*`, `__tests__/`, `mocks/`)
+   - Generated code (`generated/`, `__generated__/`, `prisma/client/`, graphql codegen output)
+   - Static assets and style files
+4. **Verify** --- run the coverage command once to confirm the config is valid and exclusions apply
+5. **Report** --- write `session-docs/{feature-name}/03-testing.md` with: what was configured, what was excluded, framework detected
+
+**Skip:** Phase 1 (test plan), Phase 2 (test writing), Quality Checklist (no tests to check)
+
+### Mode: `test-infra`
+
+**Purpose:** Set up test infrastructure only. Do NOT write module-specific tests.
+
+1. **Detect framework** --- same as coverage-config mode
+2. **Check existing infra** --- look for `mocks/`, `factories/`, test setup files, test utilities
+3. **Create what's missing:**
+   - `{test-dir}/mocks/index.ts` (or equivalent) --- barrel export for all mock factories
+   - Test setup file (`jest.setup.ts`, `vitest.setup.ts`, `conftest.py`, etc.) if missing
+   - Common test utilities (e.g., render helpers for frontend, request helpers for backend) if the project has patterns that suggest them
+4. **Do NOT create module-specific mocks** --- only shared infrastructure that all module test tasks will use
+5. **Report** --- write `session-docs/{feature-name}/03-testing.md` with: what was created, directory structure
+
+**Skip:** Phase 1 (test plan), Phase 2 (test writing for modules), Quality Checklist
+
+### Mode: `module-test`
+
+**Purpose:** Comprehensive test coverage for a specific module. No AC --- cover source files systematically.
+
+**Replaces the standard Phase 1 (AC-driven test plan) with a file-driven test plan.**
+
+#### Phase 1 --- File-Driven Test Plan
+
+Instead of mapping AC to tests, map source files to tests:
+
+1. **Scan the module** --- list all source files in the module path. Identify: services, controllers/handlers, repositories/data access, utilities, middleware, components.
+2. **Assess existing tests** --- check which files already have tests. Note coverage gaps.
+3. **Plan by dependency order** --- lowest-level first (utils → repositories → services → controllers):
+   - For each source file, define: test scenarios (happy path, errors, edge cases), dependencies to mock, test type (unit/integration)
+4. **Present the plan** before writing tests
+
+#### Phase 2 --- Implementation
+
+Same as standard Phase 2 but:
+- **No AC mapping** --- cover the module's source files systematically instead
+- **All standard rules apply:** factory pattern, AAA, isolation, framework-specific guidelines
+- After all tests pass, **run coverage for the module** and report branch coverage %
+
+#### Phase 3 --- Security Scan (embedded, unless `skip-security: true`)
+
+After tests pass:
+1. Review the module's source files for security issues:
+   - Injection risks (SQL, command, template)
+   - Auth boundary violations (missing auth checks, privilege escalation)
+   - Secrets handling (hardcoded keys, tokens in logs)
+   - Input validation gaps (unvalidated user input, missing sanitization)
+   - Unsafe data access patterns (mass assignment, IDOR)
+2. Report findings with file:line references in the session-docs summary
+
+#### Session Documentation (module-test)
+
+Write `session-docs/{feature-name}/03-testing.md`:
+
+```markdown
+# Testing Summary: {module-name}
+**Date:** {date}
+**Agent:** tester
+**Mode:** module-test
+**Module:** {module-name} ({module-path})
+
+## Test Strategy
+{Brief description --- file-driven, no AC}
+
+## Module Coverage
+| Source File | Test File | Tests | Branch Cov | Status |
+|-------------|-----------|-------|-----------|--------|
+| {source} | {test} | {N} | {N}% | COVERED/PARTIAL/SKIPPED |
+
+## Tests Created
+| File | Tests | Coverage |
+|------|-------|----------|
+| {file} | {count} | {what it covers} |
+
+## Key Scenarios Tested
+- Happy path: {description}
+- Error cases: {description}
+- Edge cases: {description}
+
+## Coverage Results
+- Branch coverage (module): {N}%
+- Files covered: {N}/{total}
+- Uncovered branches: {list of file:function with uncovered branches}
+
+## Security Findings
+| Severity | Finding | File:Line | Recommendation |
+|----------|---------|-----------|---------------|
+| {level} | {description} | {location} | {fix} |
+(or "No security issues found")
+
+## Test Results
+- Total: {X} | Passed: {Y} | Failed: {Z}
+```
+
+#### Gap Iteration Context
+
+When re-invoked for gap coverage (from Phase 3 coverage gate), the task payload includes:
+- `Gap context: {list of files and uncovered branches}`
+- Focus ONLY on writing tests for the specified gaps
+- Do NOT re-test files that already have adequate coverage
+- Do NOT re-run the full module scan
+
+---
+
 ## Execution Log Protocol
 
 At the **start** and **end** of your work, append an entry to `session-docs/{feature-name}/00-execution-log.md`.
